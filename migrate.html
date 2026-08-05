@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Migrate Data to Server</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 60px auto; padding: 20px; }
+        h1 { color: #1a237e; }
+        .status { margin: 20px 0; padding: 16px; border-radius: 8px; font-size: 0.9rem; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #fce4ec; color: #c62828; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        button { padding: 12px 24px; background: #1a237e; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+        button:hover { background: #3949ab; }
+        pre { background: #f5f5f5; padding: 12px; border-radius: 6px; font-size: 0.75rem; max-height: 200px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Migrate Local Data to Shared Server</h1>
+    <p>This page reads your roster and data from this browser's local storage and pushes it to the shared server at <strong>http://localhost:8080</strong>.</p>
+
+    <div id="preview" class="status info">Checking local data...</div>
+
+    <button id="btn-migrate" style="display:none">Push Data to Server</button>
+
+    <div id="result"></div>
+
+    <script>
+        const POSSIBLE_KEYS = [
+            "orf3_ps_dashboard_data",
+            "orf3_ps_history",
+            "orf3-ps-dashboard",
+            "dashboard_data",
+            "ps_dashboard",
+        ];
+
+        const preview = document.getElementById("preview");
+        const btn = document.getElementById("btn-migrate");
+        const result = document.getElementById("result");
+
+        // Show ALL localStorage keys to help debug
+        const allKeys = Object.keys(localStorage);
+        let foundData = null;
+        let foundHistory = null;
+
+        // Try known keys
+        const rawData = localStorage.getItem("orf3_ps_dashboard_data");
+        const rawHistory = localStorage.getItem("orf3_ps_history");
+
+        // Also check if data is under any other key
+        let otherDataKey = null;
+        allKeys.forEach(key => {
+            try {
+                const val = JSON.parse(localStorage.getItem(key));
+                if (val && val.roster && Array.isArray(val.roster)) {
+                    foundData = localStorage.getItem(key);
+                    otherDataKey = key;
+                }
+                if (val && Array.isArray(val) && val.length > 0 && val[0].date && val[0].associates) {
+                    foundHistory = localStorage.getItem(key);
+                }
+            } catch(e) {}
+        });
+
+        const dataRaw = rawData || foundData;
+        const historyRaw = rawHistory || foundHistory;
+
+        if (!dataRaw && !historyRaw) {
+            preview.innerHTML = `<strong>No dashboard data found in this browser's localStorage.</strong><br><br>
+                Keys found in localStorage (${allKeys.length} total):<br>
+                <pre>${allKeys.length > 0 ? allKeys.join('\n') : '(empty - no keys at all)'}</pre><br>
+                <strong>Possible causes:</strong><br>
+                - You may have been using a different browser (Chrome vs Edge vs Firefox)<br>
+                - Try opening this file in the browser you originally used to build the roster`;
+            preview.className = "status error";
+        } else {
+            const data = dataRaw ? JSON.parse(dataRaw) : {};
+            const history = historyRaw ? JSON.parse(historyRaw) : [];
+            const rosterCount = data.roster ? data.roster.length : 0;
+            const perfCount = data.performance ? Object.keys(data.performance).length : 0;
+            const historyCount = history.length;
+
+            let keyInfo = otherDataKey && otherDataKey !== "orf3_ps_dashboard_data"
+                ? `<br>(Found under key: "${otherDataKey}")`
+                : "";
+
+            preview.innerHTML = `<strong>Found local data:</strong>${keyInfo}<br>
+                - Roster: ${rosterCount} associates<br>
+                - Performance data: ${perfCount} entries<br>
+                - History snapshots: ${historyCount} days<br><br>
+                Click the button below to push this to the shared server.`;
+            btn.style.display = "block";
+
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                btn.textContent = "Migrating...";
+
+                try {
+                    if (dataRaw) {
+                        const resp = await fetch(SERVER + "/api/data", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: dataRaw,
+                        });
+                        if (!resp.ok) throw new Error("Failed to push dashboard data: " + resp.status);
+                    }
+
+                    if (historyRaw) {
+                        const resp = await fetch(SERVER + "/api/history", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: historyRaw,
+                        });
+                        if (!resp.ok) throw new Error("Failed to push history: " + resp.status);
+                    }
+
+                    result.innerHTML = `<div class="status success">
+                        <strong>Migration complete!</strong><br>
+                        Your roster and data are now on the shared server.<br><br>
+                        You can now close this page and go to:<br>
+                        <a href="${SERVER}" target="_blank">${SERVER}</a>
+                    </div>`;
+                } catch (e) {
+                    result.innerHTML = `<div class="status error">
+                        <strong>Error:</strong> ${e.message}<br><br>
+                        Make sure the server is running (node server.js) and try again.
+                    </div>`;
+                    btn.disabled = false;
+                    btn.textContent = "Retry";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

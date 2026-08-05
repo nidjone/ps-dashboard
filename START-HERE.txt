@@ -1,0 +1,106 @@
+==================================================
+  ORF3 IB Problem Solve Dashboard - Setup Guide
+==================================================
+
+This dashboard can run in two modes:
+
+  1. LOCAL MODE  - Just open index.html in your browser (solo use)
+  2. SHARED MODE - Run the server so your team can all access the same data
+
+
+=== OPTION 1: LOCAL MODE (solo, no install needed) ===
+
+  Just double-click index.html or run:
+    start index.html
+
+  Data is stored in your browser only. No one else can see it.
+  The header will show [Local] to indicate this mode.
+
+
+=== OPTION 2: SHARED MODE (team access) ===
+
+  You need either Python OR Node.js installed. Pick one:
+
+  --- Install Python (recommended) ---
+  1. Open: https://www.python.org/downloads/
+  2. Download Python 3.11+ for Windows
+  3. IMPORTANT: Check "Add Python to PATH" during install
+  4. Restart your terminal after install
+
+  --- OR Install Node.js ---
+  1. Open: https://nodejs.org/
+  2. Download the LTS version for Windows
+  3. Run the installer (defaults are fine)
+  4. Restart your terminal after install
+
+
+  --- Start the Server ---
+
+  Open PowerShell/Terminal in this folder, then run:
+
+    python server.py        (if you installed Python)
+      - OR -
+    node server.js          (if you installed Node.js)
+
+  You'll see:
+    ORF3 IB Problem Solve Dashboard
+    Server running on http://localhost:8080
+    Share with team: http://<your-hostname>:8080
+
+  Open http://localhost:8080 in your browser.
+  The header will show [Shared] to indicate server mode.
+
+
+  --- Share with Your Team ---
+
+  1. Find your computer name:
+       hostname
+     (e.g., "NIDJONE-PC")
+
+  2. Share the URL with your team:
+       http://NIDJONE-PC:8080
+
+  3. Everyone opens that URL in their browser
+  4. Anyone can upload CSVs — data is shared for all to see
+
+  NOTE: Your computer must be on and the server running for
+  others to access it. If your machine is off, they'll see
+  [Local] mode with their own cached copy.
+
+
+  --- Firewall ---
+
+  Windows may prompt you to allow the server through the firewall.
+  Click "Allow access" for private networks if prompted.
+  If it doesn't prompt and others can't connect, run:
+    netsh advfirewall firewall add rule name="PS Dashboard" dir=in action=allow protocol=tcp localport=8080
+
+
+=== DATA STORAGE ===
+
+  - Server mode: Data saved in server_data/ folder (JSON files)
+  - Local mode:  Data saved in browser localStorage
+  - Both modes:  Browser always keeps a backup copy locally
+
+  To back up your data:
+    Trends tab > "Export History (JSON)" button
+
+  To restore:
+    Trends tab > "Import History (JSON)" button
+
+
+=== FILES ===
+
+  index.html      - Main dashboard page
+  styles.css      - Visual styling
+  app.js          - Dashboard rendering logic
+  data.js         - Default/mock data layer
+  csv-import.js   - CSV parsing for all report formats
+  history.js      - Historical trend storage
+  storage.js      - Server/localStorage adapter
+  server.py       - Python server (shared mode)
+  server.js       - Node.js server (shared mode)
+  server_data/    - Shared data files (created when server runs)
+  START-HERE.txt  - This file
+
+==================================================

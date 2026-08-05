@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: orf3-problem-solve-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: PORT
+        value: 10000

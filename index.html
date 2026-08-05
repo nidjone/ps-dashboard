@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORF3 - IB Problem Solve Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>ORF3 &mdash; IB Problem Solve Dashboard</h1>
+            <span class="subtitle">Inbound Stow Problem Solve &mdash; Single Source of Truth</span>
+        </div>
+        <div class="header-right">
+            <div class="header-controls">
+                <label for="floor-filter">Floor:</label>
+                <select id="floor-filter">
+                    <option value="all">All Floors</option>
+                    <option value="1">A02</option>
+                    <option value="2">A03</option>
+                    <option value="3">A04</option>
+                    <option value="4">A05</option>
+                </select>
+            </div>
+            <div class="refresh-indicator">
+                <span class="pulse-dot"></span>
+                <span id="last-refresh">Last refresh: --</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- KPI Banner -->
+    <section class="kpi-banner" id="kpi-banner"></section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="floor-view">Floor Overview</button>
+        <button class="tab-btn" data-tab="pile-tracking">Pile Tracking</button>
+        <button class="tab-btn" data-tab="roster">Roster &amp; Performance</button>
+        <button class="tab-btn" data-tab="shift-report">Shift Report</button>
+        <button class="tab-btn" data-tab="trends">Trends</button>
+        <button class="tab-btn" data-tab="data-import">Data Import</button>
+    </nav>
+
+    <!-- Tab Content -->
+    <main class="main-content">
+        <!-- Floor Overview Tab -->
+        <section class="tab-panel active" id="floor-view">
+            <div class="floor-grid" id="floor-grid"></div>
+        </section>
+
+        <!-- Pile Tracking Tab -->
+        <section class="tab-panel" id="pile-tracking">
+            <div class="pile-tracking-layout">
+                <div class="pile-summary-cards" id="pile-summary-cards"></div>
+                <div class="pile-charts-row">
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h3>Pile Count Trend (Today)</h3>
+                        <canvas id="pile-trend-chart"></canvas>
+                    </div>
+                </div>
+                <div class="pile-details-row">
+                    <div class="aging-buckets" id="aging-buckets"></div>
+                    <div class="pile-table-container">
+                        <h3>Intra-Shift Pile Counts</h3>
+                        <table class="data-table" id="pile-counts-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>A02</th>
+                                    <th>A03</th>
+                                    <th>A04</th>
+                                    <th>A05</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pile-counts-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Roster & Performance Tab -->
+        <section class="tab-panel" id="roster">
+            <div class="roster-layout">
+                <div class="roster-stats" id="roster-stats"></div>
+                <div class="roster-add-section">
+                    <h3>Add Problem Solver</h3>
+                    <div class="roster-add-form">
+                        <input type="text" id="add-firstname" placeholder="First Name">
+                        <input type="text" id="add-lastname" placeholder="Last Name">
+                        <input type="text" id="add-login" placeholder="Login (alias)">
+                        <input type="text" id="add-badge" placeholder="Employee ID">
+                        <select id="add-floor">
+                            <option value="1">A02</option>
+                            <option value="2">A03</option>
+                            <option value="3">A04</option>
+                            <option value="4">A05</option>
+                        </select>
+                        <button id="btn-add-ps" class="btn btn-primary">Add to Roster</button>
+                    </div>
+                    <div class="import-status" id="status-add-ps"></div>
+                </div>
+                <div class="roster-table-container">
+                    <div class="table-header">
+                        <h3>Problem Solver Roster</h3>
+                        <input type="text" id="roster-search" placeholder="Search by name or login...">
+                    </div>
+                    <table class="data-table" id="roster-table">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Login</th>
+                                <th>Employee ID</th>
+                                <th>Floor</th>
+                                <th>Clocked In</th>
+                                <th>UPH</th>
+                                <th>ToT %</th>
+                                <th>Units</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roster-body"></tbody>
+                    </table>
+                </div>
+                <div class="performance-charts-row">
+                    <div class="chart-container">
+                        <h3>UPH Comparison</h3>
+                        <canvas id="uph-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Time on Task Distribution</h3>
+                        <canvas id="tot-chart"></canvas>
+                    </div>
+                </div>
+                <div class="uit-report" id="uit-report">
+                    <div class="uit-report-header">
+                        <h3>UIT Report — Unproductive Idle Time</h3>
+                        <div class="uit-overall" id="uit-overall"></div>
+                    </div>
+                    <div class="uit-floor-ranking" id="uit-floor-ranking"></div>
+                    <div class="uit-floor-details" id="uit-floor-details"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shift Report Tab -->
+        <section class="tab-panel" id="shift-report">
+            <div class="shift-report-layout">
+                <div class="handoff-summary" id="handoff-summary"></div>
+                <div class="trend-charts-row">
+                    <div class="chart-container">
+                        <h3>Daily Pile Count Trend (7 Days)</h3>
+                        <canvas id="daily-pile-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Daily Resolution Rate Trend</h3>
+                        <canvas id="daily-resolution-chart"></canvas>
+                    </div>
+                </div>
+                <div class="weekly-rollup" id="weekly-rollup">
+                    <h3>Weekly Rollup Summary</h3>
+                    <table class="data-table" id="weekly-table">
+                        <thead>
+                            <tr>
+                                <th>Associate</th>
+                                <th>Floor</th>
+                                <th>Avg UPH</th>
+                                <th>Avg ToT%</th>
+                                <th>Total Units</th>
+                                <th>1st Touch %</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weekly-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trends Tab -->
+        <section class="tab-panel" id="trends">
+            <div class="trends-layout">
+                <div class="trends-header">
+                    <h3>UIT / ToT Trends</h3>
+                    <div class="trends-controls">
+                        <label for="trends-range">Range:</label>
+                        <select id="trends-range">
+                            <option value="7">Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="60">Last 60 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="180">Last 180 days</option>
+                        </select>
+                        <label for="trends-view">View:</label>
+                        <select id="trends-view">
+                            <option value="floor">By Floor</option>
+                            <option value="associate">By Associate</option>
+                        </select>
+                        <span class="trends-history-info" id="trends-history-info"></span>
+                    </div>
+                </div>
+                <div class="trends-charts">
+                    <div class="chart-container">
+                        <h3>UIT % Over Time</h3>
+                        <canvas id="trend-uit-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>ToT % Over Time</h3>
+                        <canvas id="trend-tot-chart"></canvas>
+                    </div>
+                </div>
+                <div class="trends-charts">
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h3>UPH Over Time</h3>
+                        <canvas id="trend-uph-chart"></canvas>
+                    </div>
+                </div>
+                <div class="trends-charts">
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h3>Pile Counts Over Time (SOS &amp; Current/EOS)</h3>
+                        <canvas id="trend-pile-chart"></canvas>
+                    </div>
+                </div>
+                <div class="trends-actions">
+                    <button id="btn-export-history" class="btn btn-primary">Export History (JSON)</button>
+                    <input type="file" id="import-history-file" accept=".json" class="csv-input" style="display:none">
+                    <button id="btn-import-history" class="btn btn-secondary">Import History (JSON)</button>
+                    <span class="import-status" id="status-history"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Import Tab -->
+        <section class="tab-panel" id="data-import">
+            <div class="import-layout">
+                <div class="import-instructions">
+                    <h3>Import CSV Data</h3>
+                    <p>Upload CSV files from your reports to populate the dashboard with live ORF3 data. Each upload replaces the previous data for that category. Data persists in your browser until you clear it.</p>
+                </div>
+                <div class="import-grid">
+                    <div class="import-card">
+                        <h4>Performance</h4>
+                        <p class="import-desc">Individual associate metrics (UPH, Units)</p>
+                        <p class="import-format"><strong>Function Rollup (auto-detected):</strong> Upload directly from FC reporting &mdash; aggregates UPH across all PS functions per associate</p>
+                        <p class="import-format"><strong>Simple Format:</strong> <code>login, uph, tot, units_shift, units_week, first_touch</code></p>
+                        <input type="file" id="csv-performance" accept=".csv" class="csv-input">
+                        <div class="import-status" id="status-performance"></div>
+                    </div>
+                    <div class="import-card">
+                        <h4>Time on Task (Process Inspector)</h4>
+                        <p class="import-desc">Calculates ToT% from direct vs total hours</p>
+                        <p class="import-format"><strong>Process Inspector format:</strong> Upload directly &mdash; uses Hours (Direct) &divide; Hours (Total) per associate</p>
+                        <p class="import-format">Merges into existing performance data by Employee Id</p>
+                        <input type="file" id="csv-tot" accept=".csv" class="csv-input">
+                        <div class="import-status" id="status-tot"></div>
+                    </div>
+                    <div class="import-card">
+                        <h4>Pile Counts</h4>
+                        <p class="import-desc">Shift pile counts by floor and period</p>
+                        <p class="import-format"><strong>PS Pile Reporting sheet (auto-detected):</strong> Upload the FHD/BHD tab CSV directly &mdash; reads floor totals, per-location detail, and PS staffing logins</p>
+                        <p class="import-format"><strong>Simple Format:</strong> <code>time, A02, A03, A04, A05</code></p>
+                        <input type="file" id="csv-piles" accept=".csv" class="csv-input">
+                        <div class="import-status" id="status-piles"></div>
+                    </div>
+                </div>
+                <div class="import-actions">
+                    <button id="btn-clear-data" class="btn btn-secondary">Clear All Imported Data</button>
+                    <button id="btn-download-templates" class="btn btn-primary">Download CSV Templates</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>ORF3 &mdash; IB Problem Solve Dashboard v1.0</span>
+        <span>Roster is managed manually | Reports update metrics only</span>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="storage.js"></script>
+    <script src="history.js"></script>
+    <script src="csv-import.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
