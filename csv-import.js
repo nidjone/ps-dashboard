@@ -656,6 +656,7 @@ const CSVImport = (() => {
             pileData: DATA.pileData,
             floors: DATA.floors,
             quality: DATA.quality,
+            targetHC: DATA.targetHC,
             timestamp: new Date().toISOString(),
         };
         // Fire-and-forget async save (also saves to localStorage as backup)
@@ -698,6 +699,9 @@ const CSVImport = (() => {
         }
         if (snapshot.quality) {
             Object.assign(DATA.quality, snapshot.quality);
+        }
+        if (snapshot.targetHC) {
+            Object.assign(DATA.targetHC, snapshot.targetHC);
         }
         return true;
     }
