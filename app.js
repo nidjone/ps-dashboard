@@ -56,6 +56,7 @@
             renderAll();
         });
         document.getElementById("roster-search").addEventListener("input", renderRosterTable);
+        document.getElementById("roster-sort").addEventListener("change", renderRosterTable);
     }
 
     // --- Render All Sections ---
@@ -335,6 +336,7 @@
     function renderRosterTable() {
         const tbody = document.getElementById("roster-body");
         const searchTerm = (document.getElementById("roster-search").value || "").toLowerCase();
+        const sortMode = document.getElementById("roster-sort").value;
         let roster = getFilteredRoster();
 
         if (searchTerm) {
@@ -344,6 +346,20 @@
                 (r.badgeId || "").toLowerCase().includes(searchTerm)
             );
         }
+
+        // Apply sorting
+        roster = [...roster].sort((a, b) => {
+            if (sortMode === "alpha") {
+                return (a.lastName || "").localeCompare(b.lastName || "") || (a.firstName || "").localeCompare(b.firstName || "");
+            } else if (sortMode === "floor") {
+                return (a.floor || 0) - (b.floor || 0);
+            } else if (sortMode === "clockedIn") {
+                return (b.clockedIn ? 1 : 0) - (a.clockedIn ? 1 : 0);
+            } else if (sortMode === "clockedOut") {
+                return (a.clockedIn ? 1 : 0) - (b.clockedIn ? 1 : 0);
+            }
+            return 0;
+        });
 
         tbody.innerHTML = roster.map((r, idx) => {
             const p = DATA.performance[r.login] || {};

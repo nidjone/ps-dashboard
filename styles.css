@@ -529,6 +529,21 @@ body {
     width: 220px;
 }
 
+.roster-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#roster-sort {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8rem;
+    background: white;
+    cursor: pointer;
+}
+
 /* --- Status Badges --- */
 .status-badge {
     font-size: 0.7rem;

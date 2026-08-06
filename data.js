@@ -190,7 +190,7 @@ const DATA = (() => {
 
     // --- KPI Targets ---
     const kpiTargets = {
-        rateTarget: 40,       // UPH site target
+        rateTarget: 60,       // UPH site target
         totTarget: 85,        // % target
         slaTarget: 85,        // % resolved within 24hrs
         firstTouchTarget: 85, // %

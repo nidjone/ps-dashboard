@@ -11,7 +11,7 @@
     <header class="header">
         <div class="header-left">
             <h1>ORF3 &mdash; IB Problem Solve Dashboard</h1>
-            <span class="subtitle">Inbound Stow Problem Solve &mdash; Single Source of Truth</span>
+            <span class="subtitle">Inbound Stow Problem Solve</span>
         </div>
         <div class="header-right">
             <div class="header-controls">
@@ -107,7 +107,15 @@
                 <div class="roster-table-container">
                     <div class="table-header">
                         <h3>Problem Solver Roster</h3>
-                        <input type="text" id="roster-search" placeholder="Search by name or login...">
+                        <div class="roster-controls">
+                            <select id="roster-sort">
+                                <option value="alpha">Sort: A-Z (Last Name)</option>
+                                <option value="floor">Sort: By Floor</option>
+                                <option value="clockedIn">Sort: Clocked In First</option>
+                                <option value="clockedOut">Sort: Clocked Out First</option>
+                            </select>
+                            <input type="text" id="roster-search" placeholder="Search by name or login...">
+                        </div>
                     </div>
                     <table class="data-table" id="roster-table">
                         <thead>
