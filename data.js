@@ -196,6 +196,9 @@ const DATA = (() => {
         firstTouchTarget: 85, // %
     };
 
+    // --- Target Headcount per Floor (configurable at SOS) ---
+    const targetHC = { 1: 3, 2: 3, 3: 3, 4: 3 };
+
     // --- Computed KPIs ---
     function computeKPIs(shiftFilter = "all", floorFilter = "all") {
         // Full roster (everyone added)
@@ -253,6 +256,7 @@ const DATA = (() => {
         shiftHandoff,
         trends,
         kpiTargets,
+        targetHC,
         computeKPIs,
     };
 })();

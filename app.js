@@ -65,6 +65,7 @@
         renderFloorGrid();
         renderPileTracking();
         renderRoster();
+        renderStaffingUpdate();
         renderShiftReport();
         renderTrends();
     }
@@ -366,6 +367,9 @@
             const floorOptions = [1,2,3,4].map(f =>
                 `<option value="${f}" ${r.floor === f ? 'selected' : ''}>${floorLabel(f)}</option>`
             ).join("");
+            const sideOptions = ["N","S"].map(s =>
+                `<option value="${s}" ${r.side === s ? 'selected' : ''}>${s}</option>`
+            ).join("");
 
             return `<tr>
                 <td><input type="text" class="cell-edit" value="${r.firstName}" onchange="window.updateRosterField('${r.login}','firstName',this.value)"></td>
@@ -375,6 +379,11 @@
                 <td>
                     <select class="floor-select-inline" onchange="window.changeFloor('${r.login}', this.value)">
                         ${floorOptions}
+                    </select>
+                </td>
+                <td>
+                    <select class="side-select-inline" onchange="window.changeSide('${r.login}', this.value)">
+                        ${sideOptions}
                     </select>
                 </td>
                 <td>
@@ -567,6 +576,83 @@
                 </table>
             </div>
         `).join("");
+    }
+
+    // --- Staffing Update ---
+    function renderStaffingUpdate() {
+        const wrapper = document.getElementById("staffing-table-wrapper");
+        if (!wrapper) return;
+
+        const floors = [1, 2, 3, 4];
+        const sides = ["N", "S"];
+
+        // Build rows: each floor has North and South
+        let rows = [];
+        floors.forEach(floorId => {
+            sides.forEach(side => {
+                const associates = DATA.roster.filter(r => r.floor === floorId && r.side === side && r.clockedIn);
+                rows.push({
+                    floor: floorLabel(floorId),
+                    floorId,
+                    side: side === "N" ? "North" : "South",
+                    actualHC: associates.length,
+                    logins: associates.map(a => a.login),
+                });
+            });
+        });
+
+        // Calculate totals per floor
+        const floorTotals = {};
+        floors.forEach(floorId => {
+            const floorAssociates = DATA.roster.filter(r => r.floor === floorId && r.clockedIn);
+            const target = DATA.targetHC[floorId] || 3;
+            floorTotals[floorId] = {
+                target,
+                actual: floorAssociates.length,
+            };
+        });
+
+        // Site total
+        const siteTarget = floors.reduce((sum, f) => sum + (DATA.targetHC[f] || 3), 0);
+        const siteActual = floors.reduce((sum, f) => sum + floorTotals[f].actual, 0);
+
+        wrapper.innerHTML = `
+            <table class="staffing-table">
+                <thead>
+                    <tr>
+                        <th>Floor</th>
+                        <th>Side</th>
+                        <th>HC (Clocked In)</th>
+                        <th>Logins</th>
+                        <th>Area HC Target</th>
+                        <th>Total Actual HC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map((row, i) => {
+                        const isFirstOfFloor = i % 2 === 0;
+                        const ft = floorTotals[row.floorId];
+                        const actualClass = ft.actual < ft.target ? "staffing-under" : "staffing-met";
+                        return `<tr>
+                            ${isFirstOfFloor ? `<td rowspan="2" class="staffing-floor-cell"><strong>${row.floor}</strong></td>` : ""}
+                            <td>${row.side}</td>
+                            <td>${row.actualHC}</td>
+                            <td class="staffing-logins">${row.logins.join(", ") || "—"}</td>
+                            ${isFirstOfFloor ? `<td rowspan="2" class="staffing-target-cell">${ft.target}</td>` : ""}
+                            ${isFirstOfFloor ? `<td rowspan="2" class="staffing-total-cell ${actualClass}">${ft.actual}</td>` : ""}
+                        </tr>`;
+                    }).join("")}
+                </tbody>
+                <tfoot>
+                    <tr class="staffing-totals-row">
+                        <td colspan="3"><strong>Site Total</strong></td>
+                        <td></td>
+                        <td><strong>${siteTarget}</strong></td>
+                        <td class="${siteActual < siteTarget ? 'staffing-under' : 'staffing-met'}"><strong>${siteActual}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
     }
 
     // --- Shift Report ---
@@ -1031,6 +1117,21 @@
             renderFloorGrid();
             renderKPIs();
         }
+    };
+
+    window.changeSide = function(login, sideValue) {
+        const entry = DATA.roster.find(r => r.login === login);
+        if (entry) {
+            entry.side = sideValue;
+            CSVImport.saveToStorage();
+        }
+    };
+
+    window.updateTargetHC = function(floorId, value) {
+        DATA.targetHC[floorId] = parseInt(value) || 0;
+        CSVImport.saveToStorage();
+        renderKPIs();
+        renderFloorGrid();
     };
 
     window.updateRosterField = function(login, field, value) {

@@ -39,6 +39,7 @@
         <button class="tab-btn active" data-tab="floor-view">Floor Overview</button>
         <button class="tab-btn" data-tab="pile-tracking">Pile Tracking</button>
         <button class="tab-btn" data-tab="roster">Roster &amp; Performance</button>
+        <button class="tab-btn" data-tab="staffing-update">Staffing Update</button>
         <button class="tab-btn" data-tab="shift-report">Shift Report</button>
         <button class="tab-btn" data-tab="trends">Trends</button>
         <button class="tab-btn" data-tab="data-import">Data Import</button>
@@ -87,6 +88,15 @@
         <section class="tab-panel" id="roster">
             <div class="roster-layout">
                 <div class="roster-stats" id="roster-stats"></div>
+                <div class="target-hc-section">
+                    <h3>Target Headcount (per floor)</h3>
+                    <div class="target-hc-row">
+                        <label>A02: <input type="number" id="target-hc-1" class="target-hc-input" min="0" max="20" value="3" onchange="window.updateTargetHC(1, this.value)"></label>
+                        <label>A03: <input type="number" id="target-hc-2" class="target-hc-input" min="0" max="20" value="3" onchange="window.updateTargetHC(2, this.value)"></label>
+                        <label>A04: <input type="number" id="target-hc-3" class="target-hc-input" min="0" max="20" value="3" onchange="window.updateTargetHC(3, this.value)"></label>
+                        <label>A05: <input type="number" id="target-hc-4" class="target-hc-input" min="0" max="20" value="3" onchange="window.updateTargetHC(4, this.value)"></label>
+                    </div>
+                </div>
                 <div class="roster-add-section">
                     <h3>Add Problem Solver</h3>
                     <div class="roster-add-form">
@@ -125,6 +135,7 @@
                                 <th>Login</th>
                                 <th>Employee ID</th>
                                 <th>Floor</th>
+                                <th>Side</th>
                                 <th>Clocked In</th>
                                 <th>UPH</th>
                                 <th>ToT %</th>
@@ -153,6 +164,27 @@
                     <div class="uit-floor-ranking" id="uit-floor-ranking"></div>
                     <div class="uit-floor-details" id="uit-floor-details"></div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Staffing Update Tab -->
+        <section class="tab-panel" id="staffing-update">
+            <div class="staffing-update-container">
+                <div class="staffing-update-header">
+                    <h2>ORF3 IB PS Staffing Update</h2>
+                    <div class="staffing-update-controls">
+                        <select id="staffing-shift">
+                            <option value="day">Day Shift</option>
+                            <option value="night">Night Shift</option>
+                        </select>
+                        <select id="staffing-period">
+                            <option value="1">Period 1</option>
+                            <option value="2">Period 2</option>
+                            <option value="3">Period 3</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="staffing-table-wrapper"></div>
             </div>
         </section>
 
