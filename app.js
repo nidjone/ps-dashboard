@@ -799,15 +799,9 @@
 
     function renderDamagelandStaffingSection() {
         const dlRoster = DATA.damagelandRoster;
-        const dlPSActive = dlRoster.filter(r => r.role === "dlPS" && r.clockedIn);
-        const psActive = dlRoster.filter(r => r.role === "ps" && r.clockedIn);
-        const dlPSTarget = DATA.damagelandTargetHC.dlPS || 1;
-        const psTarget = DATA.damagelandTargetHC.ps || 10;
-        const totalTarget = dlPSTarget + psTarget;
-        const totalActual = dlPSActive.length + psActive.length;
-
-        const dlPSClass = dlPSActive.length < dlPSTarget ? "staffing-under" : "staffing-met";
-        const psClass = psActive.length < psTarget ? "staffing-under" : "staffing-met";
+        const allActive = dlRoster.filter(r => r.clockedIn);
+        const totalTarget = (DATA.damagelandTargetHC.dlPS || 1) + (DATA.damagelandTargetHC.ps || 10);
+        const totalActual = allActive.length;
         const totalClass = totalActual < totalTarget ? "staffing-under" : "staffing-met";
 
         return `
@@ -815,7 +809,6 @@
                 <thead>
                     <tr>
                         <th>Area</th>
-                        <th>Role</th>
                         <th>HC (Clocked In)</th>
                         <th>Logins</th>
                         <th>Target HC</th>
@@ -824,27 +817,13 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td rowspan="2" class="staffing-floor-cell"><strong>Damageland</strong></td>
-                        <td>DL Problem Solve</td>
-                        <td>${dlPSActive.length}</td>
-                        <td class="staffing-logins">${dlPSActive.map(r => r.login).join(", ") || "—"}</td>
-                        <td rowspan="2" class="staffing-target-cell">${totalTarget}</td>
-                        <td rowspan="2" class="staffing-total-cell ${totalClass}">${totalActual}</td>
-                    </tr>
-                    <tr>
-                        <td>PS</td>
-                        <td>${psActive.length}</td>
-                        <td class="staffing-logins">${psActive.map(r => r.login).join(", ") || "—"}</td>
+                        <td class="staffing-floor-cell"><strong>Damageland</strong></td>
+                        <td>${totalActual}</td>
+                        <td class="staffing-logins">${allActive.map(r => r.login).join(", ") || "—"}</td>
+                        <td class="staffing-target-cell">${totalTarget}</td>
+                        <td class="staffing-total-cell ${totalClass}">${totalActual}</td>
                     </tr>
                 </tbody>
-                <tfoot>
-                    <tr class="staffing-totals-row">
-                        <td colspan="3"><strong>Damageland Total</strong></td>
-                        <td></td>
-                        <td><strong>${totalTarget}</strong></td>
-                        <td class="${totalClass}"><strong>${totalActual}</strong></td>
-                    </tr>
-                </tfoot>
             </table>
         `;
     }
