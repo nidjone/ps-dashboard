@@ -236,7 +236,7 @@ const DATA = (() => {
             avgUPH,
             avgToT,
             totalUnits: perfs.reduce((a, p) => a + (p.unitsShift || 0), 0),
-            plannedHeadcount: shiftRoster.length,
+            plannedHeadcount: floorFilter !== "all" ? (targetHC[parseInt(floorFilter)] || 3) : Object.values(targetHC).reduce((a, b) => a + b, 0),
             clockedInCount: clockedIn.length,
             topPerformer,
             bottomPerformer,
