@@ -81,6 +81,22 @@
 
         const rateClass = kpis.avgUPH >= kpis.rateTarget ? "success" : "warning";
 
+        // Calculate overall UIT from all roster members with totalHours data
+        const uitAssociates = DATA.roster.filter(r => {
+            const p = DATA.performance[r.login];
+            return p && p.totalHours && p.totalHours > 0;
+        });
+        let overallUIT = 0;
+        if (uitAssociates.length > 0) {
+            const totalInferred = uitAssociates.reduce((s, r) => {
+                const p = DATA.performance[r.login];
+                return s + (p.totalHours - (p.directHours || 0));
+            }, 0);
+            const totalHours = uitAssociates.reduce((s, r) => s + DATA.performance[r.login].totalHours, 0);
+            overallUIT = totalHours > 0 ? Math.round((totalInferred / totalHours) * 1000) / 10 : 0;
+        }
+        const uitClass = overallUIT > 35 ? "danger" : overallUIT > 25 ? "warning" : "success";
+
         banner.innerHTML = `
             <div class="kpi-card">
                 <div class="kpi-value">${kpis.totalPile}</div>
@@ -96,6 +112,11 @@
                 <div class="kpi-value">${kpis.avgToT}%</div>
                 <div class="kpi-label">Avg Time on Task</div>
                 <div class="kpi-sub">Target: ${DATA.kpiTargets.totTarget}%</div>
+            </div>
+            <div class="kpi-card ${uitClass}">
+                <div class="kpi-value">${overallUIT}%</div>
+                <div class="kpi-label">Overall UIT</div>
+                <div class="kpi-sub">${uitAssociates.length} associates</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-value">${kpis.totalUnits}</div>
@@ -132,12 +153,12 @@
                 if (r.floor !== floor.id) return false;
                 return true;
             });
-            const plannedAssociates = associates;
             const activeAssociates = associates.filter(a => a.clockedIn);
+            const targetHC = DATA.targetHC[floor.id] || 3;
             const staffRatio = activeAssociates.length > 0
                 ? Math.round(floor.pileCount / activeAssociates.length)
-                : (plannedAssociates.length > 0 ? Math.round(floor.pileCount / plannedAssociates.length) : 999);
-            const staffPct = Math.min(100, Math.round((plannedAssociates.length / floor.targetStaffing) * 100));
+                : 999;
+            const staffPct = Math.min(100, Math.round((activeAssociates.length / targetHC) * 100));
             const staffColor = staffPct >= 90 ? "var(--success)" : staffPct >= 70 ? "var(--warning)" : "var(--danger)";
 
             const sosVal = DATA.pileData.sos[floor.id];
@@ -167,15 +188,15 @@
                         </div>
                     </div>
                     <div class="floor-associates">
-                        <h4>Problem Solvers (${activeAssociates.length} active / ${plannedAssociates.length} planned)</h4>
+                        <h4>Problem Solvers (${activeAssociates.length} active / ${targetHC} target)</h4>
                         <div class="associate-chips">
-                            ${associates.map(a => `<span class="associate-chip ${a.clockedIn ? '' : 'not-clocked-in'}">${a.firstName} ${a.lastName}${!a.clockedIn ? ' (off)' : ''}</span>`).join("")}
+                            ${activeAssociates.map(a => `<span class="associate-chip">${a.login}</span>`).join("") || '<span style="color:var(--text-secondary)">No one clocked in</span>'}
                         </div>
                     </div>
                     <div class="staffing-bar">
                         <div class="staffing-bar-fill" style="width:${staffPct}%;background:${staffColor}"></div>
                     </div>
-                    <div class="staffing-label">Staffing: ${staffPct}% of target</div>
+                    <div class="staffing-label">Staffing: ${activeAssociates.length}/${targetHC} (${staffPct}%)</div>
                 </div>
             `;
         }).join("");

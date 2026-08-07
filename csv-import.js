@@ -162,14 +162,9 @@ const CSVImport = (() => {
         }
 
         // Only update performance for people already on roster
-        // Mark everyone not clocked in first, then set active for those in the report
+        // Mark matched associates as clocked in (don't touch others)
         let matchedCount = 0;
         let unmatchedNames = [];
-
-        // Mark all roster members as not clocked in before processing
-        DATA.roster.forEach(r => {
-            r.clockedIn = false;
-        });
 
         associates.forEach(a => {
             const nameParts = a.name.replace(/"/g, "").split(",");
@@ -202,11 +197,10 @@ const CSVImport = (() => {
             }
 
             if (rosterEntry) {
-                rosterEntry.firstName = displayName.split(" ")[0] || rosterEntry.firstName;
-                rosterEntry.lastName = displayName.split(" ").slice(1).join(" ") || rosterEntry.lastName;
+                rosterEntry.firstName = rosterEntry.firstName || displayName.split(" ")[0];
+                rosterEntry.lastName = rosterEntry.lastName || displayName.split(" ").slice(1).join(" ");
                 // Store Employee ID if not already set
                 if (!rosterEntry.employeeId) rosterEntry.employeeId = loginKey;
-                rosterEntry.clockedIn = true;
                 matchedCount++;
                 // Store performance under roster's login key
                 const rosterKey = rosterEntry.login;
@@ -302,11 +296,7 @@ const CSVImport = (() => {
             Object.keys(DATA.performance).forEach(k => delete DATA.performance[k]);
         }
 
-        // Mark all roster members as not clocked in first, then set active for those in report
-        DATA.roster.forEach(r => {
-            r.clockedIn = false;
-        });
-
+        // Update performance for matched associates (don't touch clocked-in status of others)
         let matchedCount = 0;
         associates.forEach(a => {
             const tot = a.totalHours > 0
@@ -369,7 +359,6 @@ const CSVImport = (() => {
                 if (!DATA.performance[loginKey].unitsShift) {
                     DATA.performance[loginKey].unitsShift = a.totalUnits;
                 }
-                rosterEntry.clockedIn = true;
                 matchedCount++;
             }
         });
