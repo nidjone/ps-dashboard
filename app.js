@@ -609,9 +609,7 @@
 
     function loadDamagelandTargets() {
         const dlPSInput = document.getElementById("dl-target-dlPS");
-        const psInput = document.getElementById("dl-target-ps");
         if (dlPSInput) dlPSInput.value = DATA.damagelandTargetHC.dlPS || 1;
-        if (psInput) psInput.value = DATA.damagelandTargetHC.ps || 10;
     }
 
     function renderDamagelandStats() {
@@ -656,6 +654,7 @@
                 <td><input type="text" class="cell-edit" value="${r.firstName}" onchange="window.updateDLField('${r.login}','firstName',this.value)"></td>
                 <td><input type="text" class="cell-edit" value="${r.lastName}" onchange="window.updateDLField('${r.login}','lastName',this.value)"></td>
                 <td><strong>${r.login}</strong></td>
+                <td><input type="text" class="cell-edit cell-edit-id" value="${r.employeeId || ''}" onchange="window.updateDLField('${r.login}','employeeId',this.value)" placeholder="—"></td>
                 <td>
                     <select class="floor-select-inline" onchange="window.changeDLRole('${r.login}', this.value)">
                         ${roleOptions}
@@ -800,7 +799,7 @@
     function renderDamagelandStaffingSection() {
         const dlRoster = DATA.damagelandRoster;
         const allActive = dlRoster.filter(r => r.clockedIn);
-        const totalTarget = (DATA.damagelandTargetHC.dlPS || 1) + (DATA.damagelandTargetHC.ps || 10);
+        const totalTarget = DATA.damagelandTargetHC.dlPS || 1;
         const totalActual = allActive.length;
         const totalClass = totalActual < totalTarget ? "staffing-under" : "staffing-met";
 

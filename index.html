@@ -178,6 +178,7 @@
                         <input type="text" id="dl-add-firstname" placeholder="First Name">
                         <input type="text" id="dl-add-lastname" placeholder="Last Name">
                         <input type="text" id="dl-add-login" placeholder="Login (alias)">
+                        <input type="text" id="dl-add-empid" placeholder="Employee ID">
                         <select id="dl-add-role">
                             <option value="ps">Problem Solve</option>
                             <option value="dlPS">DL Problem Solve</option>
@@ -189,8 +190,7 @@
                 <div class="damageland-target-section">
                     <h3>Target Headcount</h3>
                     <div class="target-hc-row">
-                        <label>DL Problem Solve: <input type="number" id="dl-target-dlPS" class="target-hc-input" min="0" max="20" value="1" onchange="window.updateDLTargetHC('dlPS', this.value)"></label>
-                        <label>Problem Solve: <input type="number" id="dl-target-ps" class="target-hc-input" min="0" max="20" value="10" onchange="window.updateDLTargetHC('ps', this.value)"></label>
+                        <label>Damageland: <input type="number" id="dl-target-dlPS" class="target-hc-input" min="0" max="20" value="1" onchange="window.updateDLTargetHC('dlPS', this.value)"></label>
                     </div>
                 </div>
                 <div class="damageland-table-container">
@@ -203,6 +203,7 @@
                                 <th>First Name</th>
                                 <th>Last Name</th>
                                 <th>Login</th>
+                                <th>Employee ID</th>
                                 <th>Role</th>
                                 <th>Clocked In</th>
                                 <th>UPH</th>
