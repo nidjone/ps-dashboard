@@ -390,7 +390,7 @@
                 `<option value="${f}" ${r.floor === f ? 'selected' : ''}>${floorLabel(f)}</option>`
             ).join("");
             const sideOptions = ["N","S"].map(s =>
-                `<option value="${s}" ${r.side === s ? 'selected' : ''}>${s}</option>`
+                `<option value="${s}" ${(r.side || "N") === s ? 'selected' : ''}>${s}</option>`
             ).join("");
 
             return `<tr>
@@ -730,7 +730,7 @@
         let rows = [];
         floors.forEach(floorId => {
             sides.forEach(side => {
-                const associates = DATA.roster.filter(r => r.floor === floorId && r.side === side && r.clockedIn);
+                const associates = DATA.roster.filter(r => r.floor === floorId && (r.side || "N") === side && r.clockedIn);
                 rows.push({
                     floor: floorLabel(floorId),
                     floorId,

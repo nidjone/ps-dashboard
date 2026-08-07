@@ -714,6 +714,8 @@ const CSVImport = (() => {
                     delete r.shift;
                     delete r.badgeId;
                 }
+                // Ensure side has a default
+                if (!r.side) r.side = "N";
                 DATA.roster.push(r);
             });
         }
@@ -864,6 +866,7 @@ const CSVImport = (() => {
                     login: login,
                     employeeId: badgeId,
                     floor: floor,
+                    side: "N",
                     clockedIn: true,
                 });
 
