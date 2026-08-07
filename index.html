@@ -39,6 +39,7 @@
         <button class="tab-btn active" data-tab="floor-view">Floor Overview</button>
         <button class="tab-btn" data-tab="pile-tracking">Pile Tracking</button>
         <button class="tab-btn" data-tab="roster">Roster &amp; Performance</button>
+        <button class="tab-btn" data-tab="damageland">Damageland</button>
         <button class="tab-btn" data-tab="staffing-update">Staffing Update</button>
         <button class="tab-btn" data-tab="shift-report">Shift Report</button>
         <button class="tab-btn" data-tab="trends">Trends</button>
@@ -163,6 +164,54 @@
                     </div>
                     <div class="uit-floor-ranking" id="uit-floor-ranking"></div>
                     <div class="uit-floor-details" id="uit-floor-details"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Damageland Tab -->
+        <section class="tab-panel" id="damageland">
+            <div class="damageland-layout">
+                <div class="damageland-stats" id="damageland-stats"></div>
+                <div class="damageland-add-section">
+                    <h3>Add Damageland Associate</h3>
+                    <div class="damageland-add-form">
+                        <input type="text" id="dl-add-firstname" placeholder="First Name">
+                        <input type="text" id="dl-add-lastname" placeholder="Last Name">
+                        <input type="text" id="dl-add-login" placeholder="Login (alias)">
+                        <select id="dl-add-role">
+                            <option value="ps">Problem Solve</option>
+                            <option value="dlPS">DL Problem Solve</option>
+                        </select>
+                        <button id="btn-add-dl" class="btn btn-primary">Add to Damageland</button>
+                    </div>
+                    <div class="import-status" id="status-add-dl"></div>
+                </div>
+                <div class="damageland-target-section">
+                    <h3>Target Headcount</h3>
+                    <div class="target-hc-row">
+                        <label>DL Problem Solve: <input type="number" id="dl-target-dlPS" class="target-hc-input" min="0" max="20" value="1" onchange="window.updateDLTargetHC('dlPS', this.value)"></label>
+                        <label>Problem Solve: <input type="number" id="dl-target-ps" class="target-hc-input" min="0" max="20" value="10" onchange="window.updateDLTargetHC('ps', this.value)"></label>
+                    </div>
+                </div>
+                <div class="damageland-table-container">
+                    <div class="table-header">
+                        <h3>Damageland Roster</h3>
+                    </div>
+                    <table class="data-table" id="damageland-table">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Login</th>
+                                <th>Role</th>
+                                <th>Clocked In</th>
+                                <th>UPH</th>
+                                <th>ToT %</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="damageland-body"></tbody>
+                    </table>
                 </div>
             </div>
         </section>

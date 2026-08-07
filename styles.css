@@ -1442,3 +1442,78 @@ body {
 .staffing-table tfoot {
     border-top: 2px solid #1a237e;
 }
+
+/* --- Damageland Tab --- */
+.damageland-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.damageland-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.damageland-add-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.damageland-add-section h3 {
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.damageland-add-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.damageland-add-form input,
+.damageland-add-form select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.damageland-add-form input {
+    width: 130px;
+}
+
+.damageland-target-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.damageland-target-section h3 {
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.damageland-table-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+}
+
+.damageland-table-container .table-header {
+    margin-bottom: 12px;
+}
+
+.damageland-table-container .table-header h3 {
+    font-size: 0.9rem;
+    color: var(--primary);
+}

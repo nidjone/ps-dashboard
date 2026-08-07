@@ -247,6 +247,10 @@ const DATA = (() => {
         };
     }
 
+    // --- Damageland ---
+    const damagelandRoster = [];
+    const damagelandTargetHC = { dlPS: 1, ps: 10 };
+
     return {
         roster,
         performance,
@@ -257,6 +261,8 @@ const DATA = (() => {
         trends,
         kpiTargets,
         targetHC,
+        damagelandRoster,
+        damagelandTargetHC,
         computeKPIs,
     };
 })();

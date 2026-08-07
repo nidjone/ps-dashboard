@@ -65,6 +65,7 @@
         renderFloorGrid();
         renderPileTracking();
         renderRoster();
+        renderDamageland();
         renderStaffingUpdate();
         renderShiftReport();
         renderTrends();
@@ -599,6 +600,125 @@
         `).join("");
     }
 
+    // --- Damageland ---
+    function renderDamageland() {
+        renderDamagelandStats();
+        renderDamagelandTable();
+        loadDamagelandTargets();
+    }
+
+    function loadDamagelandTargets() {
+        const dlPSInput = document.getElementById("dl-target-dlPS");
+        const psInput = document.getElementById("dl-target-ps");
+        if (dlPSInput) dlPSInput.value = DATA.damagelandTargetHC.dlPS || 1;
+        if (psInput) psInput.value = DATA.damagelandTargetHC.ps || 10;
+    }
+
+    function renderDamagelandStats() {
+        const container = document.getElementById("damageland-stats");
+        if (!container) return;
+        const roster = DATA.damagelandRoster;
+        const clockedIn = roster.filter(r => r.clockedIn);
+        const psCount = clockedIn.filter(r => r.role === "ps").length;
+        const dlPSCount = clockedIn.filter(r => r.role === "dlPS").length;
+
+        container.innerHTML = `
+            <div class="roster-stat-card">
+                <div class="stat-value">${roster.length}</div>
+                <div class="stat-label">Total Roster</div>
+            </div>
+            <div class="roster-stat-card">
+                <div class="stat-value">${clockedIn.length}</div>
+                <div class="stat-label">Clocked In</div>
+            </div>
+            <div class="roster-stat-card">
+                <div class="stat-value">${psCount}</div>
+                <div class="stat-label">PS Active</div>
+            </div>
+            <div class="roster-stat-card">
+                <div class="stat-value">${dlPSCount}</div>
+                <div class="stat-label">DL PS Active</div>
+            </div>
+        `;
+    }
+
+    function renderDamagelandTable() {
+        const tbody = document.getElementById("damageland-body");
+        if (!tbody) return;
+
+        tbody.innerHTML = DATA.damagelandRoster.map(r => {
+            const p = DATA.performance[r.login] || {};
+            const roleOptions = ["ps", "dlPS"].map(role =>
+                `<option value="${role}" ${r.role === role ? 'selected' : ''}>${role === "ps" ? "Problem Solve" : "DL Problem Solve"}</option>`
+            ).join("");
+
+            return `<tr>
+                <td><input type="text" class="cell-edit" value="${r.firstName}" onchange="window.updateDLField('${r.login}','firstName',this.value)"></td>
+                <td><input type="text" class="cell-edit" value="${r.lastName}" onchange="window.updateDLField('${r.login}','lastName',this.value)"></td>
+                <td><strong>${r.login}</strong></td>
+                <td>
+                    <select class="floor-select-inline" onchange="window.changeDLRole('${r.login}', this.value)">
+                        ${roleOptions}
+                    </select>
+                </td>
+                <td>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${r.clockedIn ? 'checked' : ''} onchange="window.toggleDLClockedIn('${r.login}', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </td>
+                <td>${p.uph || '—'}</td>
+                <td>${p.tot ? p.tot + '%' : '—'}</td>
+                <td class="roster-actions">
+                    <button class="btn-icon btn-remove" onclick="window.removeDL('${r.login}')" title="Remove">&#10005;</button>
+                </td>
+            </tr>`;
+        }).join("");
+    }
+
+    // Damageland window functions
+    window.updateDLField = function(login, field, value) {
+        const entry = DATA.damagelandRoster.find(r => r.login === login);
+        if (entry) {
+            entry[field] = value.trim();
+            CSVImport.saveToStorage();
+        }
+    };
+
+    window.changeDLRole = function(login, role) {
+        const entry = DATA.damagelandRoster.find(r => r.login === login);
+        if (entry) {
+            entry.role = role;
+            CSVImport.saveToStorage();
+            renderDamagelandStats();
+        }
+    };
+
+    window.toggleDLClockedIn = function(login, checked) {
+        const entry = DATA.damagelandRoster.find(r => r.login === login);
+        if (entry) {
+            entry.clockedIn = checked;
+            CSVImport.saveToStorage();
+            renderDamagelandStats();
+        }
+    };
+
+    window.removeDL = function(login) {
+        const entry = DATA.damagelandRoster.find(r => r.login === login);
+        const name = entry ? `${entry.firstName} ${entry.lastName}` : login;
+        if (confirm(`Remove ${name} from Damageland?`)) {
+            const idx = DATA.damagelandRoster.findIndex(r => r.login === login);
+            if (idx >= 0) DATA.damagelandRoster.splice(idx, 1);
+            CSVImport.saveToStorage();
+            renderDamageland();
+        }
+    };
+
+    window.updateDLTargetHC = function(role, value) {
+        DATA.damagelandTargetHC[role] = parseInt(value) || 0;
+        CSVImport.saveToStorage();
+    };
+
     // --- Staffing Update ---
     function renderStaffingUpdate() {
         const wrapper = document.getElementById("staffing-table-wrapper");
@@ -670,6 +790,59 @@
                         <td></td>
                         <td><strong>${siteTarget}</strong></td>
                         <td class="${siteActual < siteTarget ? 'staffing-under' : 'staffing-met'}"><strong>${siteActual}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            ${renderDamagelandStaffingSection()}
+        `;
+    }
+
+    function renderDamagelandStaffingSection() {
+        const dlRoster = DATA.damagelandRoster;
+        const dlPSActive = dlRoster.filter(r => r.role === "dlPS" && r.clockedIn);
+        const psActive = dlRoster.filter(r => r.role === "ps" && r.clockedIn);
+        const dlPSTarget = DATA.damagelandTargetHC.dlPS || 1;
+        const psTarget = DATA.damagelandTargetHC.ps || 10;
+        const totalTarget = dlPSTarget + psTarget;
+        const totalActual = dlPSActive.length + psActive.length;
+
+        const dlPSClass = dlPSActive.length < dlPSTarget ? "staffing-under" : "staffing-met";
+        const psClass = psActive.length < psTarget ? "staffing-under" : "staffing-met";
+        const totalClass = totalActual < totalTarget ? "staffing-under" : "staffing-met";
+
+        return `
+            <table class="staffing-table" style="margin-top:16px;">
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Role</th>
+                        <th>HC (Clocked In)</th>
+                        <th>Logins</th>
+                        <th>Target HC</th>
+                        <th>Total Actual HC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="2" class="staffing-floor-cell"><strong>Damageland</strong></td>
+                        <td>DL Problem Solve</td>
+                        <td>${dlPSActive.length}</td>
+                        <td class="staffing-logins">${dlPSActive.map(r => r.login).join(", ") || "—"}</td>
+                        <td rowspan="2" class="staffing-target-cell">${totalTarget}</td>
+                        <td rowspan="2" class="staffing-total-cell ${totalClass}">${totalActual}</td>
+                    </tr>
+                    <tr>
+                        <td>PS</td>
+                        <td>${psActive.length}</td>
+                        <td class="staffing-logins">${psActive.map(r => r.login).join(", ") || "—"}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="staffing-totals-row">
+                        <td colspan="3"><strong>Damageland Total</strong></td>
+                        <td></td>
+                        <td><strong>${totalTarget}</strong></td>
+                        <td class="${totalClass}"><strong>${totalActual}</strong></td>
                     </tr>
                 </tfoot>
             </table>

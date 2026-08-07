@@ -646,6 +646,8 @@ const CSVImport = (() => {
             floors: DATA.floors,
             quality: DATA.quality,
             targetHC: DATA.targetHC,
+            damagelandRoster: DATA.damagelandRoster,
+            damagelandTargetHC: DATA.damagelandTargetHC,
             timestamp: new Date().toISOString(),
         };
         // Fire-and-forget async save (also saves to localStorage as backup)
@@ -691,6 +693,13 @@ const CSVImport = (() => {
         }
         if (snapshot.targetHC) {
             Object.assign(DATA.targetHC, snapshot.targetHC);
+        }
+        if (snapshot.damagelandRoster) {
+            DATA.damagelandRoster.length = 0;
+            snapshot.damagelandRoster.forEach(r => DATA.damagelandRoster.push(r));
+        }
+        if (snapshot.damagelandTargetHC) {
+            Object.assign(DATA.damagelandTargetHC, snapshot.damagelandTargetHC);
         }
         return true;
     }
@@ -832,6 +841,59 @@ const CSVImport = (() => {
                 document.getElementById("add-badge").value = "";
 
                 // Re-render
+                if (typeof window.renderAll === "function") window.renderAll();
+            });
+        }
+
+        // Manual Add Damageland Associate button
+        const addDLBtn = document.getElementById("btn-add-dl");
+        if (addDLBtn) {
+            addDLBtn.addEventListener("click", () => {
+                const firstName = (document.getElementById("dl-add-firstname").value || "").trim();
+                const lastName = (document.getElementById("dl-add-lastname").value || "").trim();
+                const login = (document.getElementById("dl-add-login").value || "").trim();
+                const role = document.getElementById("dl-add-role").value || "ps";
+                const statusEl = document.getElementById("status-add-dl");
+
+                if (!login) {
+                    statusEl.textContent = "Login (alias) is required";
+                    statusEl.className = "import-status error";
+                    return;
+                }
+
+                if (!firstName && !lastName) {
+                    statusEl.textContent = "At least a first or last name is required";
+                    statusEl.className = "import-status error";
+                    return;
+                }
+
+                const existing = DATA.damagelandRoster.find(r => r.login === login);
+                if (existing) {
+                    statusEl.textContent = `${login} is already on the Damageland roster`;
+                    statusEl.className = "import-status error";
+                    return;
+                }
+
+                DATA.damagelandRoster.push({
+                    firstName: firstName,
+                    lastName: lastName,
+                    login: login,
+                    role: role,
+                    clockedIn: false,
+                });
+
+                if (!DATA.performance[login]) {
+                    DATA.performance[login] = { uph: 0, tot: 0, unitsShift: 0, unitsWeek: 0, dwellAvg: 0, firstTouch: 0 };
+                }
+
+                saveToStorage();
+                statusEl.textContent = `Added ${firstName} ${lastName} (${login}) to Damageland`;
+                statusEl.className = "import-status success";
+
+                document.getElementById("dl-add-firstname").value = "";
+                document.getElementById("dl-add-lastname").value = "";
+                document.getElementById("dl-add-login").value = "";
+
                 if (typeof window.renderAll === "function") window.renderAll();
             });
         }
