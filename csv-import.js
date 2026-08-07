@@ -219,6 +219,28 @@ const CSVImport = (() => {
                 };
             }
 
+            // Also check Damageland roster
+            let dlEntry = DATA.damagelandRoster.find(r => r.employeeId && r.employeeId === loginKey);
+            if (!dlEntry) dlEntry = DATA.damagelandRoster.find(r => r.login === loginKey);
+            if (dlEntry) {
+                if (!dlEntry.employeeId) dlEntry.employeeId = loginKey;
+                const dlKey = dlEntry.login;
+                DATA.performance[dlKey] = {
+                    uph: uph,
+                    tot: (DATA.performance[dlKey] || {}).tot || 0,
+                    unitsShift: a.totalUnits,
+                    unitsWeek: 0,
+                    dwellAvg: 0,
+                    firstTouch: 0,
+                    paidHours: a.totalPaidHours,
+                    jobs: a.totalJobs,
+                    functions: a.functions,
+                    directHours: (DATA.performance[dlKey] || {}).directHours || 0,
+                    totalHours: (DATA.performance[dlKey] || {}).totalHours || 0,
+                };
+                if (!rosterEntry) matchedCount++;
+            }
+
             // Always store performance data (in case they get added to roster later)
             DATA.performance[loginKey] = {
                 uph: uph,
@@ -360,6 +382,25 @@ const CSVImport = (() => {
                     DATA.performance[loginKey].unitsShift = a.totalUnits;
                 }
                 matchedCount++;
+            }
+
+            // Also check Damageland roster
+            let dlEntry = DATA.damagelandRoster.find(r => r.employeeId && r.employeeId === a.empId);
+            if (!dlEntry) dlEntry = DATA.damagelandRoster.find(r => r.login === a.empId);
+            if (dlEntry) {
+                if (!dlEntry.employeeId) dlEntry.employeeId = a.empId;
+                const dlKey = dlEntry.login;
+                if (!DATA.performance[dlKey]) DATA.performance[dlKey] = {};
+                DATA.performance[dlKey].tot = tot;
+                DATA.performance[dlKey].directHours = Math.round(a.directHours * 100) / 100;
+                DATA.performance[dlKey].totalHours = Math.round(a.totalHours * 100) / 100;
+                if (!DATA.performance[dlKey].uph) {
+                    DATA.performance[dlKey].uph = a.totalHours > 0 ? Math.round(a.totalUnits / a.totalHours) : 0;
+                }
+                if (!DATA.performance[dlKey].unitsShift) {
+                    DATA.performance[dlKey].unitsShift = a.totalUnits;
+                }
+                if (!rosterEntry) matchedCount++;
             }
         });
 
@@ -852,6 +893,7 @@ const CSVImport = (() => {
                 const firstName = (document.getElementById("dl-add-firstname").value || "").trim();
                 const lastName = (document.getElementById("dl-add-lastname").value || "").trim();
                 const login = (document.getElementById("dl-add-login").value || "").trim();
+                const empId = (document.getElementById("dl-add-empid").value || "").trim();
                 const role = document.getElementById("dl-add-role").value || "ps";
                 const statusEl = document.getElementById("status-add-dl");
 
@@ -878,6 +920,7 @@ const CSVImport = (() => {
                     firstName: firstName,
                     lastName: lastName,
                     login: login,
+                    employeeId: empId,
                     role: role,
                     clockedIn: false,
                 });
@@ -893,6 +936,7 @@ const CSVImport = (() => {
                 document.getElementById("dl-add-firstname").value = "";
                 document.getElementById("dl-add-lastname").value = "";
                 document.getElementById("dl-add-login").value = "";
+                document.getElementById("dl-add-empid").value = "";
 
                 if (typeof window.renderAll === "function") window.renderAll();
             });
