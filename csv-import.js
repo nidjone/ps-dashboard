@@ -426,15 +426,23 @@ const CSVImport = (() => {
         const rows = parseCSV(text);
         if (rows.length === 0) throw new Error("No data rows found");
 
-        const intraShift = rows.map(r => ({
-            time: r.time,
-            floors: {
-                1: parseInt(r.a02 || r["a02"]) || 0,
-                2: parseInt(r.a03 || r["a03"]) || 0,
-                3: parseInt(r.a04 || r["a04"]) || 0,
-                4: parseInt(r.a05 || r["a05"]) || 0,
-            },
-        }));
+        // Track previous values to carry forward when a cell is blank
+        let prev = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        const intraShift = rows.map(r => {
+            const a02Raw = (r.a02 || r["a02"] || "").toString().trim();
+            const a03Raw = (r.a03 || r["a03"] || "").toString().trim();
+            const a04Raw = (r.a04 || r["a04"] || "").toString().trim();
+            const a05Raw = (r.a05 || r["a05"] || "").toString().trim();
+
+            const floors = {
+                1: a02Raw !== "" ? (parseInt(a02Raw) || 0) : prev[1],
+                2: a03Raw !== "" ? (parseInt(a03Raw) || 0) : prev[2],
+                3: a04Raw !== "" ? (parseInt(a04Raw) || 0) : prev[3],
+                4: a05Raw !== "" ? (parseInt(a05Raw) || 0) : prev[4],
+            };
+            prev = { ...floors };
+            return { time: r.time, floors };
+        });
 
         const first = intraShift[0].floors;
         const last = intraShift[intraShift.length - 1].floors;
@@ -484,9 +492,13 @@ const CSVImport = (() => {
                     if (floorCell === "A02" || floorCell === "A03" || floorCell === "A04" || floorCell === "A05") {
                         const floorId = FLOOR_MAP[floorCell];
                         const sos = parseInt(fCells[floorIdx + 1]) || 0;
-                        const p1 = parseInt(fCells[floorIdx + 2]) || 0;
-                        const p2 = parseInt(fCells[floorIdx + 3]) || 0;
-                        const eos = parseInt(fCells[floorIdx + 4]) || 0;
+                        const p1Raw = fCells[floorIdx + 2] ? fCells[floorIdx + 2].trim() : "";
+                        const p2Raw = fCells[floorIdx + 3] ? fCells[floorIdx + 3].trim() : "";
+                        const eosRaw = fCells[floorIdx + 4] ? fCells[floorIdx + 4].trim() : "";
+                        // If a period is blank, carry forward the previous period's value
+                        const p1 = p1Raw !== "" ? (parseInt(p1Raw) || 0) : sos;
+                        const p2 = p2Raw !== "" ? (parseInt(p2Raw) || 0) : p1;
+                        const eos = eosRaw !== "" ? (parseInt(eosRaw) || 0) : p2;
                         floorTotals[floorId] = { sos, p1, p2, eos };
                     }
                     if (fCells[floorIdx] && fCells[floorIdx].trim().toUpperCase().includes("TOTAL MOD PS")) {
@@ -558,16 +570,24 @@ const CSVImport = (() => {
         const anyFloorHasData = Object.values(floorTotals).some(hasData);
 
         if (anyFloorHasData) {
+            // Always include SOS if any floor has it
             if (Object.values(floorTotals).some(f => f.sos > 0)) {
                 periods.push({ label: "SOS", key: "sos" });
             }
+            // Include P1 if any floor has a p1 value different from sos (meaning data was entered)
             if (Object.values(floorTotals).some(f => f.p1 > 0)) {
                 periods.push({ label: "Period 1", key: "p1" });
             }
-            if (Object.values(floorTotals).some(f => f.p2 > 0)) {
+            // Include P2 if any floor has a p2 value different from p1
+            if (Object.values(floorTotals).some(f => f.p2 > 0 && f.p2 !== f.p1)) {
+                periods.push({ label: "Period 2", key: "p2" });
+            } else if (Object.values(floorTotals).some(f => f.p2 > 0)) {
                 periods.push({ label: "Period 2", key: "p2" });
             }
-            if (Object.values(floorTotals).some(f => f.eos > 0)) {
+            // Include EOS if any floor has eos value
+            if (Object.values(floorTotals).some(f => f.eos > 0 && f.eos !== f.p2)) {
+                periods.push({ label: "EOS", key: "eos" });
+            } else if (Object.values(floorTotals).some(f => f.eos > 0)) {
                 periods.push({ label: "EOS", key: "eos" });
             }
         }
