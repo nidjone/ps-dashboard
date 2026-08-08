@@ -492,16 +492,14 @@ const CSVImport = (() => {
                     if (floorCell === "A02" || floorCell === "A03" || floorCell === "A04" || floorCell === "A05") {
                         const floorId = FLOOR_MAP[floorCell];
                         const sos = parseInt(fCells[floorIdx + 1]) || 0;
-                        const p1Raw = parseInt(fCells[floorIdx + 2]);
-                        const p2Raw = parseInt(fCells[floorIdx + 3]);
-                        const eosRaw = parseInt(fCells[floorIdx + 4]);
-                        // Store raw values; we'll handle carry-forward after all floors are parsed
-                        floorTotals[floorId] = {
-                            sos,
-                            p1: isNaN(p1Raw) ? null : p1Raw,
-                            p2: isNaN(p2Raw) ? null : p2Raw,
-                            eos: isNaN(eosRaw) ? null : eosRaw,
-                        };
+                        const p1Val = parseInt(fCells[floorIdx + 2]);
+                        const p2Val = parseInt(fCells[floorIdx + 3]);
+                        const eosVal = parseInt(fCells[floorIdx + 4]);
+                        // Treat 0 or NaN as "not entered" — carry forward from previous period
+                        const p1 = (p1Val > 0) ? p1Val : sos;
+                        const p2 = (p2Val > 0) ? p2Val : (p1Val > 0 ? p1Val : sos);
+                        const eos = (eosVal > 0) ? eosVal : (p2Val > 0 ? p2Val : (p1Val > 0 ? p1Val : sos));
+                        floorTotals[floorId] = { sos, p1, p2, eos };
                     }
                     if (fCells[floorIdx] && fCells[floorIdx].trim().toUpperCase().includes("TOTAL MOD PS")) {
                         const sos = parseInt(fCells[floorIdx + 1]) || 0;
@@ -565,30 +563,8 @@ const CSVImport = (() => {
             }
         }
 
-        // Carry-forward logic: if ALL floors have 0 (or null) for a period, use previous period's values
+        // Determine which periods have real data (value > 0 before carry-forward)
         const floorIds = [1, 2, 3, 4];
-        // Check P1: if all floors are 0 or null, carry SOS forward
-        const allP1Zero = floorIds.every(f => !floorTotals[f].p1);
-        if (allP1Zero) {
-            floorIds.forEach(f => { floorTotals[f].p1 = floorTotals[f].sos; });
-        } else {
-            // For individual floors that are 0 when others have data, keep 0 (it might be real)
-            floorIds.forEach(f => { if (floorTotals[f].p1 === null) floorTotals[f].p1 = floorTotals[f].sos; });
-        }
-        // Check P2
-        const allP2Zero = floorIds.every(f => !floorTotals[f].p2);
-        if (allP2Zero) {
-            floorIds.forEach(f => { floorTotals[f].p2 = floorTotals[f].p1; });
-        } else {
-            floorIds.forEach(f => { if (floorTotals[f].p2 === null) floorTotals[f].p2 = floorTotals[f].p1; });
-        }
-        // Check EOS
-        const allEOSZero = floorIds.every(f => !floorTotals[f].eos);
-        if (allEOSZero) {
-            floorIds.forEach(f => { floorTotals[f].eos = floorTotals[f].p2; });
-        } else {
-            floorIds.forEach(f => { if (floorTotals[f].eos === null) floorTotals[f].eos = floorTotals[f].p2; });
-        }
 
         // Build intra-shift data from floor totals
         // Determine which periods have real data entered (not just carried forward)
@@ -601,16 +577,16 @@ const CSVImport = (() => {
             if (Object.values(floorTotals).some(f => f.sos > 0)) {
                 periods.push({ label: "SOS", key: "sos" });
             }
-            // Show P1 only if it has real data (not all carried from SOS)
-            if (!allP1Zero) {
+            // Show P1 if any floor's P1 differs from its SOS (meaning real data was entered)
+            if (floorIds.some(f => floorTotals[f].p1 !== floorTotals[f].sos)) {
                 periods.push({ label: "Period 1", key: "p1" });
             }
-            // Show P2 only if it has real data
-            if (!allP2Zero) {
+            // Show P2 if any floor's P2 differs from its P1
+            if (floorIds.some(f => floorTotals[f].p2 !== floorTotals[f].p1)) {
                 periods.push({ label: "Period 2", key: "p2" });
             }
-            // Show EOS only if it has real data
-            if (!allEOSZero) {
+            // Show EOS if any floor's EOS differs from its P2
+            if (floorIds.some(f => floorTotals[f].eos !== floorTotals[f].p2)) {
                 periods.push({ label: "EOS", key: "eos" });
             }
         }
