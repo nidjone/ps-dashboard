@@ -492,14 +492,16 @@ const CSVImport = (() => {
                     if (floorCell === "A02" || floorCell === "A03" || floorCell === "A04" || floorCell === "A05") {
                         const floorId = FLOOR_MAP[floorCell];
                         const sos = parseInt(fCells[floorIdx + 1]) || 0;
-                        const p1Raw = fCells[floorIdx + 2] ? fCells[floorIdx + 2].trim() : "";
-                        const p2Raw = fCells[floorIdx + 3] ? fCells[floorIdx + 3].trim() : "";
-                        const eosRaw = fCells[floorIdx + 4] ? fCells[floorIdx + 4].trim() : "";
-                        // If a period is blank, carry forward the previous period's value
-                        const p1 = p1Raw !== "" ? (parseInt(p1Raw) || 0) : sos;
-                        const p2 = p2Raw !== "" ? (parseInt(p2Raw) || 0) : p1;
-                        const eos = eosRaw !== "" ? (parseInt(eosRaw) || 0) : p2;
-                        floorTotals[floorId] = { sos, p1, p2, eos };
+                        const p1Raw = parseInt(fCells[floorIdx + 2]);
+                        const p2Raw = parseInt(fCells[floorIdx + 3]);
+                        const eosRaw = parseInt(fCells[floorIdx + 4]);
+                        // Store raw values; we'll handle carry-forward after all floors are parsed
+                        floorTotals[floorId] = {
+                            sos,
+                            p1: isNaN(p1Raw) ? null : p1Raw,
+                            p2: isNaN(p2Raw) ? null : p2Raw,
+                            eos: isNaN(eosRaw) ? null : eosRaw,
+                        };
                     }
                     if (fCells[floorIdx] && fCells[floorIdx].trim().toUpperCase().includes("TOTAL MOD PS")) {
                         const sos = parseInt(fCells[floorIdx + 1]) || 0;
@@ -563,31 +565,52 @@ const CSVImport = (() => {
             }
         }
 
+        // Carry-forward logic: if ALL floors have 0 (or null) for a period, use previous period's values
+        const floorIds = [1, 2, 3, 4];
+        // Check P1: if all floors are 0 or null, carry SOS forward
+        const allP1Zero = floorIds.every(f => !floorTotals[f].p1);
+        if (allP1Zero) {
+            floorIds.forEach(f => { floorTotals[f].p1 = floorTotals[f].sos; });
+        } else {
+            // For individual floors that are 0 when others have data, keep 0 (it might be real)
+            floorIds.forEach(f => { if (floorTotals[f].p1 === null) floorTotals[f].p1 = floorTotals[f].sos; });
+        }
+        // Check P2
+        const allP2Zero = floorIds.every(f => !floorTotals[f].p2);
+        if (allP2Zero) {
+            floorIds.forEach(f => { floorTotals[f].p2 = floorTotals[f].p1; });
+        } else {
+            floorIds.forEach(f => { if (floorTotals[f].p2 === null) floorTotals[f].p2 = floorTotals[f].p1; });
+        }
+        // Check EOS
+        const allEOSZero = floorIds.every(f => !floorTotals[f].eos);
+        if (allEOSZero) {
+            floorIds.forEach(f => { floorTotals[f].eos = floorTotals[f].p2; });
+        } else {
+            floorIds.forEach(f => { if (floorTotals[f].eos === null) floorTotals[f].eos = floorTotals[f].p2; });
+        }
+
         // Build intra-shift data from floor totals
-        // Determine which periods have data (non-zero)
+        // Determine which periods have real data entered (not just carried forward)
         const periods = [];
         const hasData = (ft) => ft.sos > 0 || ft.p1 > 0 || ft.p2 > 0 || ft.eos > 0;
         const anyFloorHasData = Object.values(floorTotals).some(hasData);
 
         if (anyFloorHasData) {
-            // Always include SOS if any floor has it
+            // Always show SOS
             if (Object.values(floorTotals).some(f => f.sos > 0)) {
                 periods.push({ label: "SOS", key: "sos" });
             }
-            // Include P1 if any floor has a p1 value different from sos (meaning data was entered)
-            if (Object.values(floorTotals).some(f => f.p1 > 0)) {
+            // Show P1 only if it has real data (not all carried from SOS)
+            if (!allP1Zero) {
                 periods.push({ label: "Period 1", key: "p1" });
             }
-            // Include P2 if any floor has a p2 value different from p1
-            if (Object.values(floorTotals).some(f => f.p2 > 0 && f.p2 !== f.p1)) {
-                periods.push({ label: "Period 2", key: "p2" });
-            } else if (Object.values(floorTotals).some(f => f.p2 > 0)) {
+            // Show P2 only if it has real data
+            if (!allP2Zero) {
                 periods.push({ label: "Period 2", key: "p2" });
             }
-            // Include EOS if any floor has eos value
-            if (Object.values(floorTotals).some(f => f.eos > 0 && f.eos !== f.p2)) {
-                periods.push({ label: "EOS", key: "eos" });
-            } else if (Object.values(floorTotals).some(f => f.eos > 0)) {
+            // Show EOS only if it has real data
+            if (!allEOSZero) {
                 periods.push({ label: "EOS", key: "eos" });
             }
         }
