@@ -829,104 +829,141 @@
 
     // --- Shift Report ---
     function renderShiftReport() {
-        renderHandoffSummary();
-        renderDailyPileChart();
-        renderDailyResolutionChart();
-        renderWeeklyRollup();
+        renderShiftSummary();
+        renderShiftFloorBreakdown();
+        renderShiftPerformers();
     }
 
-    function renderHandoffSummary() {
-        const container = document.getElementById("handoff-summary");
-        const h = DATA.shiftHandoff;
+    function renderShiftSummary() {
+        const container = document.getElementById("shift-summary");
+        if (!container) return;
+
+        const totalPile = Object.values(DATA.pileData.current).reduce((a, b) => a + b, 0);
+        const sosPile = Object.values(DATA.pileData.sos).reduce((a, b) => a + b, 0);
+        const delta = totalPile - sosPile;
+        const deltaText = delta <= 0 ? `Down ${Math.abs(delta)}` : `Up ${delta}`;
+        const deltaClass = delta <= 0 ? "success" : "danger";
+
+        const clockedIn = DATA.roster.filter(r => r.clockedIn);
+        const totalTarget = Object.values(DATA.targetHC).reduce((a, b) => a + b, 0);
+        const perfs = clockedIn.map(r => DATA.performance[r.login]).filter(p => p && p.uph > 0);
+        const avgUPH = perfs.length ? Math.round(perfs.reduce((a, p) => a + p.uph, 0) / perfs.length) : 0;
+        const avgToT = perfs.length ? Math.round(perfs.reduce((a, p) => a + p.tot, 0) / perfs.length) : 0;
+        const totalUnits = perfs.reduce((a, p) => a + (p.unitsShift || 0), 0);
 
         container.innerHTML = `
-            <h3>Shift Handoff: ${h.outgoingShift} → ${h.incomingShift}</h3>
-            <div class="handoff-meta">
-                <div class="handoff-meta-item">Timestamp: <strong>${h.timestamp}</strong></div>
-                <div class="handoff-meta-item">Pile Inherited: <strong>${h.summary.totalPileInherited}</strong></div>
-                <div class="handoff-meta-item">Hot Items: <strong>${h.summary.hotItems}</strong></div>
-                <div class="handoff-meta-item">Open Escalations: <strong>${h.summary.openEscalations}</strong></div>
+            <h3>Shift Summary</h3>
+            <div class="shift-summary-grid">
+                <div class="shift-stat">
+                    <div class="shift-stat-value">${totalPile}</div>
+                    <div class="shift-stat-label">Current Pile</div>
+                </div>
+                <div class="shift-stat ${deltaClass}">
+                    <div class="shift-stat-value">${deltaText}</div>
+                    <div class="shift-stat-label">vs SOS (${sosPile})</div>
+                </div>
+                <div class="shift-stat">
+                    <div class="shift-stat-value">${clockedIn.length}/${totalTarget}</div>
+                    <div class="shift-stat-label">Staffing (Active/Target)</div>
+                </div>
+                <div class="shift-stat">
+                    <div class="shift-stat-value">${avgUPH}</div>
+                    <div class="shift-stat-label">Avg UPH (Target: ${DATA.kpiTargets.rateTarget})</div>
+                </div>
+                <div class="shift-stat">
+                    <div class="shift-stat-value">${avgToT}%</div>
+                    <div class="shift-stat-label">Avg ToT (Target: ${DATA.kpiTargets.totTarget}%)</div>
+                </div>
+                <div class="shift-stat">
+                    <div class="shift-stat-value">${totalUnits}</div>
+                    <div class="shift-stat-label">Total Units Resolved</div>
+                </div>
             </div>
-            <ul class="handoff-notes">
-                ${h.summary.notes.map(n => `<li>${n}</li>`).join("")}
-            </ul>
         `;
     }
 
-    function renderDailyPileChart() {
-        const ctx = document.getElementById("daily-pile-chart");
-        if (charts.dailyPile) charts.dailyPile.destroy();
+    function renderShiftFloorBreakdown() {
+        const container = document.getElementById("shift-floor-breakdown");
+        if (!container) return;
 
-        charts.dailyPile = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: DATA.trends.dailyPile.map(d => d.date),
-                datasets: [{
-                    label: "EOD Pile Count",
-                    data: DATA.trends.dailyPile.map(d => d.count),
-                    borderColor: "#1a237e",
-                    backgroundColor: "#1a237e22",
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: false, title: { display: true, text: "Items" } } },
-            },
-        });
+        const floors = [1, 2, 3, 4];
+        container.innerHTML = `
+            <h3>Floor Breakdown</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Floor</th>
+                        <th>SOS Pile</th>
+                        <th>Current Pile</th>
+                        <th>Change</th>
+                        <th>Active HC</th>
+                        <th>Target HC</th>
+                        <th>Avg UPH</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${floors.map(f => {
+                        const sos = DATA.pileData.sos[f] || 0;
+                        const current = DATA.pileData.current[f] || 0;
+                        const change = current - sos;
+                        const changeText = change <= 0 ? `<span style="color:var(--success)">-${Math.abs(change)}</span>` : `<span style="color:var(--danger)">+${change}</span>`;
+                        const active = DATA.roster.filter(r => r.floor === f && r.clockedIn);
+                        const target = DATA.targetHC[f] || 3;
+                        const floorPerfs = active.map(r => DATA.performance[r.login]).filter(p => p && p.uph > 0);
+                        const floorUPH = floorPerfs.length ? Math.round(floorPerfs.reduce((a, p) => a + p.uph, 0) / floorPerfs.length) : 0;
+                        const uphClass = floorUPH >= DATA.kpiTargets.rateTarget ? "color:var(--success)" : "color:var(--danger)";
+
+                        return `<tr>
+                            <td><strong>${floorLabel(f)}</strong></td>
+                            <td>${sos}</td>
+                            <td>${current}</td>
+                            <td>${changeText}</td>
+                            <td>${active.length}</td>
+                            <td>${target}</td>
+                            <td style="${uphClass}">${floorUPH}</td>
+                        </tr>`;
+                    }).join("")}
+                </tbody>
+            </table>
+        `;
     }
 
-    function renderDailyResolutionChart() {
-        const ctx = document.getElementById("daily-resolution-chart");
-        if (charts.dailyRes) charts.dailyRes.destroy();
+    function renderShiftPerformers() {
+        const container = document.getElementById("shift-performers");
+        if (!container) return;
 
-        charts.dailyRes = new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: DATA.trends.dailyResolution.map(d => d.date),
-                datasets: [{
-                    label: "Resolution Rate %",
-                    data: DATA.trends.dailyResolution.map(d => d.rate),
-                    borderColor: "#2e7d32",
-                    backgroundColor: "#2e7d3222",
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: false, max: 100, title: { display: true, text: "%" } } },
-            },
-        });
-    }
+        const clockedIn = DATA.roster.filter(r => r.clockedIn);
+        const withPerf = clockedIn.filter(r => DATA.performance[r.login] && DATA.performance[r.login].uph > 0);
+        const sorted = [...withPerf].sort((a, b) => DATA.performance[b.login].uph - DATA.performance[a.login].uph);
 
-    function renderWeeklyRollup() {
-        const tbody = document.getElementById("weekly-body");
-        const active = DATA.roster.filter(r => r.clockedIn);
+        const top3 = sorted.slice(0, 3);
+        const bottom3 = sorted.slice(-3).reverse();
 
-        tbody.innerHTML = active.map(r => {
-            const p = DATA.performance[r.login];
-            if (!p || p.uph === 0) return "";
-            const trendIcon = p.uph >= DATA.kpiTargets.rateTarget ? "&#9650;" : "&#9660;";
-            const trendColor = p.uph >= DATA.kpiTargets.rateTarget ? "var(--success)" : "var(--danger)";
-
-            return `<tr>
-                <td><strong>${r.firstName} ${r.lastName}</strong> (${r.login})</td>
-                <td>${floorLabel(r.floor)}</td>
-                <td>${p.uph}</td>
-                <td>${p.tot}%</td>
-                <td>${p.unitsWeek}</td>
-                <td>${p.firstTouch}%</td>
-                <td style="color:${trendColor}">${trendIcon}</td>
-            </tr>`;
-        }).filter(Boolean).join("");
+        container.innerHTML = `
+            <div class="shift-performers-grid">
+                <div class="shift-performers-section">
+                    <h3>Top Performers</h3>
+                    ${top3.length > 0 ? top3.map((r, i) => {
+                        const p = DATA.performance[r.login];
+                        return `<div class="performer-card top">
+                            <span class="performer-rank">#${i + 1}</span>
+                            <span class="performer-name">${r.firstName} ${r.lastName} (${r.login})</span>
+                            <span class="performer-stat">${p.uph} UPH | ${p.tot}% ToT</span>
+                        </div>`;
+                    }).join("") : '<div style="color:var(--text-secondary)">No data yet</div>'}
+                </div>
+                <div class="shift-performers-section">
+                    <h3>Needs Coaching</h3>
+                    ${bottom3.length > 0 ? bottom3.map((r, i) => {
+                        const p = DATA.performance[r.login];
+                        return `<div class="performer-card bottom">
+                            <span class="performer-name">${r.firstName} ${r.lastName} (${r.login})</span>
+                            <span class="performer-stat">${p.uph} UPH | ${p.tot}% ToT | ${floorLabel(r.floor)}</span>
+                        </div>`;
+                    }).join("") : '<div style="color:var(--text-secondary)">No data yet</div>'}
+                </div>
+            </div>
+        `;
     }
 
     // --- Trends ---

@@ -1517,3 +1517,111 @@ body {
     font-size: 0.9rem;
     color: var(--primary);
 }
+
+/* --- Shift Report (Auto-Generated) --- */
+.shift-report-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.shift-summary h3,
+.shift-floor-breakdown h3 {
+    font-size: 1rem;
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.shift-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.shift-stat {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+}
+
+.shift-stat.success {
+    border-color: var(--success);
+    background: #e8f5e9;
+}
+
+.shift-stat.danger {
+    border-color: var(--danger);
+    background: #ffebee;
+}
+
+.shift-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.shift-stat.success .shift-stat-value { color: var(--success); }
+.shift-stat.danger .shift-stat-value { color: var(--danger); }
+
+.shift-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.shift-floor-breakdown {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.shift-performers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.shift-performers-section h3 {
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.performer-card {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+}
+
+.performer-card.top {
+    background: #e8f5e9;
+    border-color: var(--success);
+}
+
+.performer-card.bottom {
+    background: #fff3e0;
+    border-color: var(--warning);
+}
+
+.performer-rank {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--success);
+}
+
+.performer-name {
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.performer-stat {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
