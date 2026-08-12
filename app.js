@@ -1293,16 +1293,14 @@
 
     // --- Auto Refresh Simulation ---
     function startAutoRefresh() {
-        setInterval(() => {
-            // Simulate minor data fluctuations
-            DATA.floors.forEach(f => {
-                const change = Math.floor(Math.random() * 5) - 2;
-                DATA.pileData.current[f.id] = Math.max(50, DATA.pileData.current[f.id] + change);
-                f.pileCount = DATA.pileData.current[f.id];
-            });
-            renderAll();
-            updateRefreshTime();
-        }, 60000); // Every 60 seconds
+        setInterval(async () => {
+            // Pull latest data from server
+            if (Storage.isServerMode()) {
+                await CSVImport.loadFromStorage();
+                renderAll();
+                updateRefreshTime();
+            }
+        }, 30000); // Every 30 seconds
     }
 
     // --- Boot ---
