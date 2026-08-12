@@ -1625,3 +1625,54 @@ body {
     color: var(--text-secondary);
     margin-top: 2px;
 }
+
+/* --- Date Lookup (Trends Tab) --- */
+.trends-date-lookup {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.trends-date-lookup h3 {
+    font-size: 0.95rem;
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.date-lookup-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.date-lookup-controls input[type="date"] {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.date-lookup-header {
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.date-lookup-section {
+    margin-bottom: 16px;
+}
+
+.date-lookup-section h4 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+#date-lookup-results .data-table {
+    font-size: 0.78rem;
+}

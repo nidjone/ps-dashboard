@@ -1070,6 +1070,120 @@
                 reader.readAsText(file);
             });
         }
+
+        // Date lookup button
+        const lookupBtn = document.getElementById("btn-lookup-date");
+        if (lookupBtn) {
+            lookupBtn.addEventListener("click", renderDateLookup);
+        }
+    }
+
+    function renderDateLookup() {
+        const dateInput = document.getElementById("trends-date-picker");
+        const resultsEl = document.getElementById("date-lookup-results");
+        if (!dateInput || !resultsEl) return;
+
+        const selectedDate = dateInput.value;
+        if (!selectedDate) {
+            resultsEl.innerHTML = '<span style="color:var(--danger)">Please select a date</span>';
+            return;
+        }
+
+        const snapshots = History.getRange(selectedDate, selectedDate);
+        if (snapshots.length === 0) {
+            resultsEl.innerHTML = `<span style="color:var(--text-secondary)">No data found for ${selectedDate}</span>`;
+            return;
+        }
+
+        const snap = snapshots[0];
+        const floors = [1, 2, 3, 4];
+
+        // Build associate performance table
+        const associateRows = Object.entries(snap.associates || {}).map(([login, data]) => {
+            const rosterEntry = DATA.roster.find(r => r.login === login) || DATA.damagelandRoster.find(r => r.login === login);
+            const name = rosterEntry ? `${rosterEntry.firstName} ${rosterEntry.lastName}` : login;
+            return { login, name, uph: data.uph || 0, tot: data.tot || 0, uit: data.uit || 0 };
+        }).sort((a, b) => b.uph - a.uph);
+
+        // Build pile data if available
+        let pileHTML = '';
+        if (snap.piles) {
+            pileHTML = `
+                <div class="date-lookup-section">
+                    <h4>Pile Counts</h4>
+                    <table class="data-table">
+                        <thead><tr><th>Floor</th><th>SOS</th><th>Current/EOS</th></tr></thead>
+                        <tbody>
+                            ${floors.map(f => `<tr>
+                                <td><strong>${floorLabel(f)}</strong></td>
+                                <td>${snap.piles.sos ? snap.piles.sos[f] || 0 : '—'}</td>
+                                <td>${snap.piles.current ? snap.piles.current[f] || 0 : '—'}</td>
+                            </tr>`).join("")}
+                            <tr style="font-weight:700;border-top:2px solid var(--primary)">
+                                <td>Total</td>
+                                <td>${snap.piles.sosTotal || '—'}</td>
+                                <td>${snap.piles.currentTotal || '—'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Build floor summary
+        let floorHTML = '';
+        if (snap.floors) {
+            floorHTML = `
+                <div class="date-lookup-section">
+                    <h4>Floor Summary</h4>
+                    <table class="data-table">
+                        <thead><tr><th>Floor</th><th>Avg UPH</th><th>Avg ToT %</th><th>UIT %</th></tr></thead>
+                        <tbody>
+                            ${floors.map(f => {
+                                const fd = snap.floors[f];
+                                if (!fd) return '';
+                                return `<tr>
+                                    <td><strong>${floorLabel(f)}</strong></td>
+                                    <td>${fd.avgUph || '—'}</td>
+                                    <td>${fd.tot || '—'}%</td>
+                                    <td>${fd.uit || '—'}%</td>
+                                </tr>`;
+                            }).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Build associate table
+        let assocHTML = '';
+        if (associateRows.length > 0) {
+            assocHTML = `
+                <div class="date-lookup-section">
+                    <h4>Associate Performance (${associateRows.length} associates)</h4>
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Login</th><th>UPH</th><th>ToT %</th><th>UIT %</th></tr></thead>
+                        <tbody>
+                            ${associateRows.map(a => `<tr>
+                                <td>${a.name}</td>
+                                <td>${a.login}</td>
+                                <td>${a.uph}</td>
+                                <td>${a.tot}%</td>
+                                <td>${a.uit}%</td>
+                            </tr>`).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        resultsEl.innerHTML = `
+            <div class="date-lookup-header"><strong>Data for ${selectedDate}</strong></div>
+            ${pileHTML}
+            ${floorHTML}
+            ${assocHTML}
+            ${!pileHTML && !floorHTML && !assocHTML ? '<span style="color:var(--text-secondary)">Snapshot found but no detailed data available</span>' : ''}
+        `;
     }
 
     function renderTrends() {
