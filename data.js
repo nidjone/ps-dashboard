@@ -109,6 +109,15 @@ const DATA = (() => {
             targetStaffing: 4,
             idealRatio: 35,
         },
+        {
+            id: 5,
+            name: "Central PS",
+            pileCount: 0,
+            trend: "flat",
+            throughput: 0,
+            targetStaffing: 3,
+            idealRatio: 0,
+        },
     ];
 
     // --- Quality / Accountability ---

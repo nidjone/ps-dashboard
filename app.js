@@ -156,11 +156,33 @@
             });
             const activeAssociates = associates.filter(a => a.clockedIn);
             const targetHC = DATA.targetHC[floor.id] || 3;
+            const staffPct = Math.min(100, Math.round((activeAssociates.length / targetHC) * 100));
+            const staffColor = staffPct >= 90 ? "var(--success)" : staffPct >= 70 ? "var(--warning)" : "var(--danger)";
+
+            // Central PS has no pile data
+            if (floor.id === 5) {
+                return `
+                <div class="floor-card">
+                    <div class="floor-card-header">
+                        <h3>${floor.name}</h3>
+                    </div>
+                    <div class="floor-associates">
+                        <h4>Problem Solvers (${activeAssociates.length} active / ${targetHC} target)</h4>
+                        <div class="associate-chips">
+                            ${activeAssociates.map(a => `<span class="associate-chip">${a.login}</span>`).join("") || '<span style="color:var(--text-secondary)">No one clocked in</span>'}
+                        </div>
+                    </div>
+                    <div class="staffing-bar">
+                        <div class="staffing-bar-fill" style="width:${staffPct}%;background:${staffColor}"></div>
+                    </div>
+                    <div class="staffing-label">Staffing: ${activeAssociates.length}/${targetHC} (${staffPct}%)</div>
+                </div>
+                `;
+            }
+
             const staffRatio = activeAssociates.length > 0
                 ? Math.round(floor.pileCount / activeAssociates.length)
                 : 999;
-            const staffPct = Math.min(100, Math.round((activeAssociates.length / targetHC) * 100));
-            const staffColor = staffPct >= 90 ? "var(--success)" : staffPct >= 70 ? "var(--warning)" : "var(--danger)";
 
             const sosVal = DATA.pileData.sos[floor.id];
             const currentVal = DATA.pileData.current[floor.id];
