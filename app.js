@@ -23,6 +23,7 @@
         setupFilters();
         setupTrends();
         CSVImport.setupImportUI();
+        loadTargetHCInputs();
         renderAll();
         startAutoRefresh();
         updateRefreshTime();
@@ -46,6 +47,14 @@
                 document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
                 document.getElementById(btn.dataset.tab).classList.add("active");
             });
+        });
+    }
+
+    // --- Load Target HC from saved data ---
+    function loadTargetHCInputs() {
+        [1, 2, 3, 4, 5].forEach(f => {
+            const el = document.getElementById(`target-hc-${f}`);
+            if (el) el.value = DATA.targetHC[f] || 3;
         });
     }
 
