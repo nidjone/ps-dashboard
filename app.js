@@ -389,7 +389,7 @@
             const floorOptions = [1,2,3,4,5].map(f =>
                 `<option value="${f}" ${r.floor === f ? 'selected' : ''}>${floorLabel(f)}</option>`
             ).join("");
-            const sideOptions = ["N","S"].map(s =>
+            const sideOptions = r.floor === 5 ? '<option value="">—</option>' : ["N","S"].map(s =>
                 `<option value="${s}" ${(r.side || "N") === s ? 'selected' : ''}>${s}</option>`
             ).join("");
 
@@ -752,9 +752,15 @@
             };
         });
 
-        // Site total
-        const siteTarget = floors.reduce((sum, f) => sum + (DATA.targetHC[f] || 3), 0);
-        const siteActual = floors.reduce((sum, f) => sum + floorTotals[f].actual, 0);
+        // Central PS (no N/S split)
+        const centralAssociates = DATA.roster.filter(r => r.floor === 5 && r.clockedIn);
+        const centralTarget = DATA.targetHC[5] || 3;
+        const centralActual = centralAssociates.length;
+        const centralClass = centralActual < centralTarget ? "staffing-under" : "staffing-met";
+
+        // Site total (include Central PS)
+        const siteTarget = floors.reduce((sum, f) => sum + (DATA.targetHC[f] || 3), 0) + centralTarget;
+        const siteActual = floors.reduce((sum, f) => sum + floorTotals[f].actual, 0) + centralActual;
 
         wrapper.innerHTML = `
             <table class="staffing-table">
@@ -782,6 +788,14 @@
                             ${isFirstOfFloor ? `<td rowspan="2" class="staffing-total-cell ${actualClass}">${ft.actual}</td>` : ""}
                         </tr>`;
                     }).join("")}
+                    <tr>
+                        <td class="staffing-floor-cell"><strong>Central PS</strong></td>
+                        <td>—</td>
+                        <td>${centralActual}</td>
+                        <td class="staffing-logins">${centralAssociates.map(a => a.login).join(", ") || "—"}</td>
+                        <td class="staffing-target-cell">${centralTarget}</td>
+                        <td class="staffing-total-cell ${centralClass}">${centralActual}</td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr class="staffing-totals-row">
@@ -1322,9 +1336,11 @@
         const entry = DATA.roster.find(r => r.login === login);
         if (entry) {
             entry.floor = parseInt(floorValue);
+            if (entry.floor === 5) entry.side = "";
             CSVImport.saveToStorage();
             renderFloorGrid();
             renderKPIs();
+            renderRosterTable();
         }
     };
 

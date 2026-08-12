@@ -197,7 +197,7 @@ const DATA = (() => {
     };
 
     // --- Target Headcount per Floor (configurable at SOS) ---
-    const targetHC = { 1: 3, 2: 3, 3: 3, 4: 3 };
+    const targetHC = { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3 };
 
     // --- Computed KPIs ---
     function computeKPIs(shiftFilter = "all", floorFilter = "all") {
