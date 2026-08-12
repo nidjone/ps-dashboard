@@ -636,6 +636,12 @@
         renderDamagelandStats();
         renderDamagelandTable();
         loadDamagelandTargets();
+        // Attach sort listener once
+        const sortEl = document.getElementById("dl-roster-sort");
+        if (sortEl && !sortEl.dataset.bound) {
+            sortEl.addEventListener("change", renderDamagelandTable);
+            sortEl.dataset.bound = "1";
+        }
     }
 
     function loadDamagelandTargets() {
@@ -675,7 +681,22 @@
         const tbody = document.getElementById("damageland-body");
         if (!tbody) return;
 
-        tbody.innerHTML = DATA.damagelandRoster.map(r => {
+        const sortMode = document.getElementById("dl-roster-sort") ? document.getElementById("dl-roster-sort").value : "alpha";
+        let roster = [...DATA.damagelandRoster];
+
+        // Apply sorting
+        roster.sort((a, b) => {
+            if (sortMode === "alpha") {
+                return (a.lastName || "").localeCompare(b.lastName || "") || (a.firstName || "").localeCompare(b.firstName || "");
+            } else if (sortMode === "clockedIn") {
+                return (b.clockedIn ? 1 : 0) - (a.clockedIn ? 1 : 0);
+            } else if (sortMode === "clockedOut") {
+                return (a.clockedIn ? 1 : 0) - (b.clockedIn ? 1 : 0);
+            }
+            return 0;
+        });
+
+        tbody.innerHTML = roster.map(r => {
             const p = DATA.performance[r.login] || {};
             const roleOptions = ["ps", "dlPS"].map(role =>
                 `<option value="${role}" ${r.role === role ? 'selected' : ''}>${role === "ps" ? "Problem Solve" : "DL Problem Solve"}</option>`
