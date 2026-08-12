@@ -8,7 +8,7 @@
     let currentFloor = "all";
     let charts = {};
 
-    const FLOOR_LABELS = { 1: "A02", 2: "A03", 3: "A04", 4: "A05" };
+    const FLOOR_LABELS = { 1: "A02", 2: "A03", 3: "A04", 4: "A05", 5: "Central PS" };
     function floorLabel(id) { return FLOOR_LABELS[id] || `Floor ${id}`; }
 
     // --- Initialize ---
@@ -386,7 +386,7 @@
 
         tbody.innerHTML = roster.map((r, idx) => {
             const p = DATA.performance[r.login] || {};
-            const floorOptions = [1,2,3,4].map(f =>
+            const floorOptions = [1,2,3,4,5].map(f =>
                 `<option value="${f}" ${r.floor === f ? 'selected' : ''}>${floorLabel(f)}</option>`
             ).join("");
             const sideOptions = ["N","S"].map(s =>
