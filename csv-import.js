@@ -544,6 +544,26 @@ const CSVImport = (() => {
             }
         }
 
+        // Parse the TOTAL MOD row on the left side for accurate site totals
+        // Format: TOTAL MOD, SOS-PS, SOS-Dmg, blank, P1-PS, P1-Dmg, blank, P2-PS, P2-Dmg, blank, EOS-PS, EOS-Dmg
+        let siteTotalMod = { sos: 0, p1: 0, p2: 0, eos: 0 };
+        for (let i = 0; i < lines.length; i++) {
+            const cells = parseCSVLine(lines[i]);
+            const firstCell = (cells[0] || "").trim().toUpperCase();
+            if (firstCell === "TOTAL MOD") {
+                const sosPS = parseInt(cells[1]) || 0;
+                const p1PS = parseInt(cells[4]) || 0;
+                const p2PS = parseInt(cells[7]) || 0;
+                const eosPS = parseInt(cells[10]) || 0;
+                // Carry forward: if 0, use previous period
+                siteTotalMod.sos = sosPS;
+                siteTotalMod.p1 = (p1PS > 0) ? p1PS : sosPS;
+                siteTotalMod.p2 = (p2PS > 0) ? p2PS : ((p1PS > 0) ? p1PS : sosPS);
+                siteTotalMod.eos = (eosPS > 0) ? eosPS : ((p2PS > 0) ? p2PS : ((p1PS > 0) ? p1PS : sosPS));
+                break;
+            }
+        }
+
         // Parse staffing logins (look for "PS Login" header area)
         for (let i = 0; i < lines.length; i++) {
             const cells = parseCSVLine(lines[i]);
@@ -610,6 +630,7 @@ const CSVImport = (() => {
         DATA.pileData.sos = { ...first };
         DATA.pileData.current = { ...last };
         DATA.pileData.eos = { ...last };
+        DATA.pileData.siteTotalMod = siteTotalMod;
 
         // Store detail rows for potential drill-down
         DATA.pileData.detailRows = detailRows;

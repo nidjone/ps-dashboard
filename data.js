@@ -221,7 +221,20 @@ const DATA = (() => {
 
         const perfs = clockedIn.map(r => performance[r.login]).filter(p => p && p.uph > 0);
 
-        const totalPile = Object.values(pileData.current).reduce((a, b) => a + b, 0);
+        // Use TOTAL MOD from left side of spreadsheet if available, otherwise sum floor totals
+        const siteMod = pileData.siteTotalMod;
+        let totalPile;
+        if (siteMod && siteMod.eos > 0) {
+            totalPile = siteMod.eos;
+        } else if (siteMod && siteMod.p2 > 0) {
+            totalPile = siteMod.p2;
+        } else if (siteMod && siteMod.p1 > 0) {
+            totalPile = siteMod.p1;
+        } else if (siteMod && siteMod.sos > 0) {
+            totalPile = siteMod.sos;
+        } else {
+            totalPile = Object.values(pileData.current).reduce((a, b) => a + b, 0);
+        }
         const avgUPH = perfs.length ? Math.round(perfs.reduce((a, p) => a + p.uph, 0) / perfs.length) : 0;
         const avgToT = perfs.length ? Math.round(perfs.reduce((a, p) => a + p.tot, 0) / perfs.length) : 0;
         const within24 = pileData.aging["0-24hrs"];
