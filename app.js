@@ -859,6 +859,85 @@
                 </tfoot>
             </table>
             ${renderDamagelandStaffingSection()}
+            ${renderPSRatesSection()}
+        `;
+    }
+
+    function renderPSRatesSection() {
+        // All clocked-in problem solvers (stow floors + central), plus Damageland
+        const psAssociates = DATA.roster.filter(r => r.clockedIn);
+        const dlAssociates = DATA.damagelandRoster.filter(r => r.clockedIn);
+
+        // Combine, tagging area
+        const all = [
+            ...psAssociates.map(r => ({ ...r, area: floorLabel(r.floor) })),
+            ...dlAssociates.map(r => ({ ...r, area: "Damageland" })),
+        ];
+
+        // Build rows with UPH and totes/hr (jobs / paidHours)
+        const rows = all.map(r => {
+            const p = DATA.performance[r.login] || {};
+            const uph = p.uph || 0;
+            const jobs = p.jobs || 0;
+            const paidHours = p.paidHours || 0;
+            const totesPerHour = paidHours > 0 ? Math.round((jobs / paidHours) * 10) / 10 : 0;
+            return {
+                name: `${r.firstName} ${r.lastName}`,
+                login: r.login,
+                area: r.area,
+                uph,
+                totesPerHour,
+            };
+        }).filter(r => r.uph > 0 || r.totesPerHour > 0)
+          .sort((a, b) => b.uph - a.uph);
+
+        if (rows.length === 0) {
+            return `
+                <div class="ps-rates-section">
+                    <h3 style="margin-top:20px;">Problem Solver Rates</h3>
+                    <p style="color:var(--text-secondary);font-size:0.82rem;">Upload Function Rollup data to see rates.</p>
+                </div>
+            `;
+        }
+
+        // Site averages
+        const avgUPH = Math.round(rows.reduce((s, r) => s + r.uph, 0) / rows.length);
+        const avgTotes = Math.round((rows.reduce((s, r) => s + r.totesPerHour, 0) / rows.length) * 10) / 10;
+
+        return `
+            <div class="ps-rates-section">
+                <h3 style="margin-top:20px;">Problem Solver Rates</h3>
+                <table class="staffing-table">
+                    <thead>
+                        <tr>
+                            <th>Associate</th>
+                            <th>Login</th>
+                            <th>Area</th>
+                            <th>UPH</th>
+                            <th>Totes/Hr</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(r => {
+                            const uphClass = r.uph >= DATA.kpiTargets.rateTarget ? "staffing-met" : "staffing-under";
+                            return `<tr>
+                                <td>${r.name}</td>
+                                <td>${r.login}</td>
+                                <td>${r.area}</td>
+                                <td class="${uphClass}">${r.uph}</td>
+                                <td>${r.totesPerHour}</td>
+                            </tr>`;
+                        }).join("")}
+                    </tbody>
+                    <tfoot>
+                        <tr class="staffing-totals-row">
+                            <td colspan="3"><strong>Average</strong></td>
+                            <td><strong>${avgUPH}</strong></td>
+                            <td><strong>${avgTotes}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         `;
     }
 
