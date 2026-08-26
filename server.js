@@ -123,6 +123,33 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    if (req.url === "/api/roster/update" && req.method === "POST") {
+        const body = await readBody(req);
+        try {
+            const payload = JSON.parse(body);
+            const existing = readJSON(DATA_FILE) || {};
+
+            const mergeList = (existingList, incoming, removeLogins) => {
+                const byLogin = {};
+                (existingList || []).forEach(r => { if (r.login) byLogin[r.login] = r; });
+                (incoming || []).forEach(entry => { if (entry.login) byLogin[entry.login] = entry; });
+                (removeLogins || []).forEach(login => { delete byLogin[login]; });
+                return Object.values(byLogin);
+            };
+
+            existing.roster = mergeList(existing.roster, payload.roster, payload.removeLogins);
+            existing.damagelandRoster = mergeList(existing.damagelandRoster, payload.damagelandRoster, payload.removeDamagelandLogins);
+            if (payload.targetHC) existing.targetHC = payload.targetHC;
+            if (payload.damagelandTargetHC) existing.damagelandTargetHC = payload.damagelandTargetHC;
+
+            writeJSON(DATA_FILE, existing);
+            sendJSON(res, { ok: true, message: "Roster updated" });
+        } catch (e) {
+            sendError(res, 400, "Invalid JSON");
+        }
+        return;
+    }
+
     if (req.url === "/api/history" && req.method === "GET") {
         sendJSON(res, readJSON(HISTORY_FILE) || []);
         return;

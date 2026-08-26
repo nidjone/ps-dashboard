@@ -81,6 +81,46 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                     json.dump(existing, f, indent=2)
             self._send_json({"ok": True, "message": "Data merged", "keys": list(payload.keys())})
 
+        elif self.path == "/api/roster/update":
+            # Update or add individual roster entries by login, without
+            # replacing the whole roster. Optionally remove specific logins.
+            # Payload: { roster: [...changed entries...],
+            #            damagelandRoster: [...],
+            #            removeLogins: [...], removeDamagelandLogins: [...],
+            #            targetHC: {...}, damagelandTargetHC: {...} }
+            with lock:
+                existing = read_json(DATA_FILE) or {}
+
+                def merge_list(existing_list, incoming, remove_logins):
+                    existing_list = existing_list or []
+                    by_login = {r.get("login"): r for r in existing_list}
+                    for entry in (incoming or []):
+                        login = entry.get("login")
+                        if login:
+                            by_login[login] = entry
+                    for login in (remove_logins or []):
+                        by_login.pop(login, None)
+                    return list(by_login.values())
+
+                existing["roster"] = merge_list(
+                    existing.get("roster"),
+                    payload.get("roster"),
+                    payload.get("removeLogins"),
+                )
+                existing["damagelandRoster"] = merge_list(
+                    existing.get("damagelandRoster"),
+                    payload.get("damagelandRoster"),
+                    payload.get("removeDamagelandLogins"),
+                )
+                if "targetHC" in payload:
+                    existing["targetHC"] = payload["targetHC"]
+                if "damagelandTargetHC" in payload:
+                    existing["damagelandTargetHC"] = payload["damagelandTargetHC"]
+
+                with open(DATA_FILE, "w", encoding="utf-8") as f:
+                    json.dump(existing, f, indent=2)
+            self._send_json({"ok": True, "message": "Roster updated"})
+
         elif self.path == "/api/history":
             write_json(HISTORY_FILE, payload)
             self._send_json({"ok": True, "message": "History saved"})

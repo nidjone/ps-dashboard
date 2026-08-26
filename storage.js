@@ -88,6 +88,34 @@ const Storage = (() => {
         }
     }
 
+    // Update individual roster entries by login (never replaces the whole
+    // roster). This is the safest way to persist manual roster edits.
+    async function updateRoster(changes) {
+        // changes: { roster, damagelandRoster, removeLogins,
+        //            removeDamagelandLogins, targetHC, damagelandTargetHC }
+        if (serverAvailable) {
+            try {
+                await fetch("/api/roster/update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(changes),
+                });
+            } catch (e) {
+                console.warn("[Storage] Roster update failed:", e.message);
+            }
+        }
+        // Keep localStorage backup in sync with full current arrays
+        try {
+            const raw = localStorage.getItem(LOCAL_DATA_KEY);
+            const existing = raw ? JSON.parse(raw) : {};
+            if (changes.fullRoster) existing.roster = changes.fullRoster;
+            if (changes.fullDamagelandRoster) existing.damagelandRoster = changes.fullDamagelandRoster;
+            if (changes.targetHC) existing.targetHC = changes.targetHC;
+            if (changes.damagelandTargetHC) existing.damagelandTargetHC = changes.damagelandTargetHC;
+            localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(existing));
+        } catch (e) { /* ignore */ }
+    }
+
     // Merge only specific sections into the server data, preventing
     // one user's save from overwriting another user's changes.
     async function mergeData(partialData) {
@@ -224,6 +252,7 @@ const Storage = (() => {
         loadData,
         saveData,
         mergeData,
+        updateRoster,
         loadHistory,
         saveHistory,
         mergeHistory,

@@ -735,17 +735,39 @@ const CSVImport = (() => {
         Storage.saveData(snapshot);
     }
 
-    // Merge-based save for roster/staffing edits. Only sends the sections
-    // that a manual edit touches, so it won't overwrite another user's
-    // performance data or pile counts saved around the same time.
-    function saveRosterOnly() {
-        Storage.mergeData({
-            roster: DATA.roster,
-            damagelandRoster: DATA.damagelandRoster,
+    // Per-associate roster save. Sends individual entries to be merged by
+    // login on the server, so a stale client can never wipe the whole roster.
+    // Pass the login(s) that changed; omit to sync all (used for bulk edits).
+    // For removals, pass removeLogins / removeDamagelandLogins.
+    function saveRosterOnly(opts = {}) {
+        const changes = {
             targetHC: DATA.targetHC,
             damagelandTargetHC: DATA.damagelandTargetHC,
-            timestamp: new Date().toISOString(),
-        });
+            // full arrays kept for localStorage backup only
+            fullRoster: DATA.roster,
+            fullDamagelandRoster: DATA.damagelandRoster,
+        };
+
+        if (opts.removeLogins) changes.removeLogins = opts.removeLogins;
+        if (opts.removeDamagelandLogins) changes.removeDamagelandLogins = opts.removeDamagelandLogins;
+
+        // Only send the changed associate(s) to the server for merging.
+        if (opts.login) {
+            const entry = DATA.roster.find(r => r.login === opts.login);
+            if (entry) changes.roster = [entry];
+            const dlEntry = DATA.damagelandRoster.find(r => r.login === opts.login);
+            if (dlEntry) changes.damagelandRoster = [dlEntry];
+        } else if (opts.targetOnly) {
+            // Only target HC changed — don't send any roster entries,
+            // so we can't disturb the server's roster arrays at all.
+        } else if (!opts.removeLogins && !opts.removeDamagelandLogins) {
+            // No specific login given — send full arrays so any local
+            // additions are also persisted (used for bulk operations).
+            changes.roster = DATA.roster;
+            changes.damagelandRoster = DATA.damagelandRoster;
+        }
+
+        Storage.updateRoster(changes);
     }
 
     async function loadFromStorage() {
@@ -927,7 +949,7 @@ const CSVImport = (() => {
                     DATA.performance[login] = { uph: 0, tot: 0, unitsShift: 0, unitsWeek: 0, dwellAvg: 0, firstTouch: 0 };
                 }
 
-                saveRosterOnly();
+                saveRosterOnly({ login });
                 statusEl.textContent = `Added ${firstName} ${lastName} (${login}) to ${FLOOR_REVERSE[floor]}`;
                 statusEl.className = "import-status success";
 
@@ -985,7 +1007,7 @@ const CSVImport = (() => {
                     DATA.performance[login] = { uph: 0, tot: 0, unitsShift: 0, unitsWeek: 0, dwellAvg: 0, firstTouch: 0 };
                 }
 
-                saveRosterOnly();
+                saveRosterOnly({ login });
                 statusEl.textContent = `Added ${firstName} ${lastName} (${login}) to Damageland`;
                 statusEl.className = "import-status success";
 
