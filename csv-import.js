@@ -127,6 +127,7 @@ const CSVImport = (() => {
                     totalUnits: 0,
                     totalJobs: 0,
                     functions: [],
+                    seenFunctions: {},
                 };
             }
 
@@ -140,11 +141,24 @@ const CSVImport = (() => {
             const units = parseInt(r.units) || 0;
             const jobs = parseInt(r.jobs) || 0;
 
-            // Avoid double-counting if same function appears multiple times
-            // (e.g. person does Damages + Stow to Prime PSolve)
-            employeeMap[empId].totalPaidHours += paidHours;
+            // Each function has its own Total row. Guard against the same
+            // function appearing more than once (which would double-count
+            // that function's jobs/hours/units).
+            const fnKey = functionName || "_";
+            if (employeeMap[empId].seenFunctions[fnKey]) return;
+            employeeMap[empId].seenFunctions[fnKey] = true;
+
             employeeMap[empId].totalUnits += units;
             employeeMap[empId].totalJobs += jobs;
+            // Total paid hours across all functions (used for UPH — units per
+            // hour reflects overall productivity including all paid time).
+            employeeMap[empId].totalPaidHours += paidHours;
+            // Productive paid hours: only hours from functions that actually
+            // produced jobs. Used for totes/hr so idle/indirect functions
+            // don't drag the rate down.
+            if (jobs > 0) {
+                employeeMap[empId].productiveHours = (employeeMap[empId].productiveHours || 0) + paidHours;
+            }
             if (functionName && !employeeMap[empId].functions.includes(functionName)) {
                 employeeMap[empId].functions.push(functionName);
             }
@@ -212,6 +226,7 @@ const CSVImport = (() => {
                     dwellAvg: 0,
                     firstTouch: 0,
                     paidHours: a.totalPaidHours,
+                    productiveHours: a.productiveHours || 0,
                     jobs: a.totalJobs,
                     functions: a.functions,
                     directHours: (DATA.performance[rosterKey] || {}).directHours || 0,
@@ -233,6 +248,7 @@ const CSVImport = (() => {
                     dwellAvg: 0,
                     firstTouch: 0,
                     paidHours: a.totalPaidHours,
+                    productiveHours: a.productiveHours || 0,
                     jobs: a.totalJobs,
                     functions: a.functions,
                     directHours: (DATA.performance[dlKey] || {}).directHours || 0,
@@ -250,6 +266,7 @@ const CSVImport = (() => {
                 dwellAvg: 0,
                 firstTouch: 0,
                 paidHours: a.totalPaidHours,
+                productiveHours: a.productiveHours || 0,
                 jobs: a.totalJobs,
                 functions: a.functions,
             };

@@ -879,8 +879,10 @@
             const p = DATA.performance[r.login] || {};
             const uph = p.uph || 0;
             const jobs = p.jobs || 0;
-            const paidHours = p.paidHours || 0;
-            const totesPerHour = paidHours > 0 ? Math.round((jobs / paidHours) * 10) / 10 : 0;
+            // Use productive hours (functions that produced jobs) for totes/hr
+            // so idle/indirect time doesn't drag the rate down.
+            const totesHours = p.productiveHours || p.paidHours || 0;
+            const totesPerHour = totesHours > 0 ? Math.round((jobs / totesHours) * 10) / 10 : 0;
             return {
                 name: `${r.firstName} ${r.lastName}`,
                 login: r.login,
