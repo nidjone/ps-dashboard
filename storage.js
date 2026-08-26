@@ -88,6 +88,30 @@ const Storage = (() => {
         }
     }
 
+    // Merge only specific sections into the server data, preventing
+    // one user's save from overwriting another user's changes.
+    async function mergeData(partialData) {
+        // Update localStorage backup with the merged view
+        try {
+            const raw = localStorage.getItem(LOCAL_DATA_KEY);
+            const existing = raw ? JSON.parse(raw) : {};
+            Object.keys(partialData).forEach(k => { existing[k] = partialData[k]; });
+            localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(existing));
+        } catch (e) { /* ignore */ }
+
+        if (serverAvailable) {
+            try {
+                await fetch("/api/data/merge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(partialData),
+                });
+            } catch (e) {
+                console.warn("[Storage] Server merge failed:", e.message);
+            }
+        }
+    }
+
     // --- History Data (snapshots array) ---
 
     async function loadHistory() {
@@ -199,6 +223,7 @@ const Storage = (() => {
         isServerMode,
         loadData,
         saveData,
+        mergeData,
         loadHistory,
         saveHistory,
         mergeHistory,

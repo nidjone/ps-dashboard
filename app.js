@@ -732,7 +732,7 @@
         const entry = DATA.damagelandRoster.find(r => r.login === login);
         if (entry) {
             entry[field] = value.trim();
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
         }
     };
 
@@ -740,7 +740,7 @@
         const entry = DATA.damagelandRoster.find(r => r.login === login);
         if (entry) {
             entry.role = role;
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderDamagelandStats();
         }
     };
@@ -749,7 +749,7 @@
         const entry = DATA.damagelandRoster.find(r => r.login === login);
         if (entry) {
             entry.clockedIn = checked;
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderDamagelandStats();
         }
     };
@@ -760,14 +760,14 @@
         if (confirm(`Remove ${name} from Damageland?`)) {
             const idx = DATA.damagelandRoster.findIndex(r => r.login === login);
             if (idx >= 0) DATA.damagelandRoster.splice(idx, 1);
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderDamageland();
         }
     };
 
     window.updateDLTargetHC = function(role, value) {
         DATA.damagelandTargetHC[role] = parseInt(value) || 0;
-        CSVImport.saveToStorage();
+        CSVImport.saveRosterOnly();
     };
 
     // --- Staffing Update ---
@@ -1480,7 +1480,7 @@
         if (confirm(`Remove ${name} from the roster?`)) {
             const idx = DATA.roster.findIndex(r => r.login === login);
             if (idx >= 0) DATA.roster.splice(idx, 1);
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderAll();
         }
     };
@@ -1489,7 +1489,7 @@
         const entry = DATA.roster.find(r => r.login === login);
         if (entry) {
             entry.clockedIn = checked;
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderRosterStats();
             renderKPIs();
             renderFloorGrid();
@@ -1501,7 +1501,7 @@
         if (entry) {
             entry.floor = parseInt(floorValue);
             if (entry.floor === 5) entry.side = "";
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
             renderFloorGrid();
             renderKPIs();
             renderRosterTable();
@@ -1512,13 +1512,13 @@
         const entry = DATA.roster.find(r => r.login === login);
         if (entry) {
             entry.side = sideValue;
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
         }
     };
 
     window.updateTargetHC = function(floorId, value) {
         DATA.targetHC[floorId] = parseInt(value) || 0;
-        CSVImport.saveToStorage();
+        CSVImport.saveRosterOnly();
         renderKPIs();
         renderFloorGrid();
     };
@@ -1527,7 +1527,7 @@
         const entry = DATA.roster.find(r => r.login === login);
         if (entry) {
             entry[field] = value.trim();
-            CSVImport.saveToStorage();
+            CSVImport.saveRosterOnly();
         }
     };
 

@@ -15,6 +15,8 @@ const PORT = 8080;
 const DATA_DIR = path.join(__dirname, "server_data");
 const DATA_FILE = path.join(DATA_DIR, "dashboard_data.json");
 const HISTORY_FILE = path.join(DATA_DIR, "history_data.json");
+const SW_DATA_FILE = path.join(DATA_DIR, "standard_work.json");
+const SW_HISTORY_FILE = path.join(DATA_DIR, "standard_work_history.json");
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
@@ -107,6 +109,20 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    if (req.url === "/api/data/merge" && req.method === "POST") {
+        const body = await readBody(req);
+        try {
+            const payload = JSON.parse(body);
+            const existing = readJSON(DATA_FILE) || {};
+            Object.keys(payload).forEach(key => { existing[key] = payload[key]; });
+            writeJSON(DATA_FILE, existing);
+            sendJSON(res, { ok: true, message: "Data merged", keys: Object.keys(payload) });
+        } catch (e) {
+            sendError(res, 400, "Invalid JSON");
+        }
+        return;
+    }
+
     if (req.url === "/api/history" && req.method === "GET") {
         sendJSON(res, readJSON(HISTORY_FILE) || []);
         return;
@@ -144,6 +160,39 @@ const server = http.createServer(async (req, res) => {
             existing.sort((a, b) => a.date.localeCompare(b.date));
             writeJSON(HISTORY_FILE, existing);
             sendJSON(res, { ok: true, added, total: existing.length });
+        } catch (e) {
+            sendError(res, 400, "Invalid JSON");
+        }
+        return;
+    }
+
+    // --- Standard Work API routes ---
+    if (req.url === "/api/standard-work/data" && req.method === "GET") {
+        sendJSON(res, readJSON(SW_DATA_FILE) || {});
+        return;
+    }
+
+    if (req.url === "/api/standard-work/data" && req.method === "POST") {
+        const body = await readBody(req);
+        try {
+            writeJSON(SW_DATA_FILE, JSON.parse(body));
+            sendJSON(res, { ok: true, message: "Standard work data saved" });
+        } catch (e) {
+            sendError(res, 400, "Invalid JSON");
+        }
+        return;
+    }
+
+    if (req.url === "/api/standard-work/history" && req.method === "GET") {
+        sendJSON(res, readJSON(SW_HISTORY_FILE) || []);
+        return;
+    }
+
+    if (req.url === "/api/standard-work/history" && req.method === "POST") {
+        const body = await readBody(req);
+        try {
+            writeJSON(SW_HISTORY_FILE, JSON.parse(body));
+            sendJSON(res, { ok: true, message: "Standard work history saved" });
         } catch (e) {
             sendError(res, 400, "Invalid JSON");
         }

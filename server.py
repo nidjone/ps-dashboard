@@ -69,6 +69,18 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             write_json(DATA_FILE, payload)
             self._send_json({"ok": True, "message": "Data saved"})
 
+        elif self.path == "/api/data/merge":
+            # Merge only the provided top-level sections into existing data.
+            # This prevents one user's save from wiping another user's changes
+            # to a different section (roster, damagelandRoster, pileData, etc.)
+            with lock:
+                existing = read_json(DATA_FILE) or {}
+                for key, value in payload.items():
+                    existing[key] = value
+                with open(DATA_FILE, "w", encoding="utf-8") as f:
+                    json.dump(existing, f, indent=2)
+            self._send_json({"ok": True, "message": "Data merged", "keys": list(payload.keys())})
+
         elif self.path == "/api/history":
             write_json(HISTORY_FILE, payload)
             self._send_json({"ok": True, "message": "History saved"})

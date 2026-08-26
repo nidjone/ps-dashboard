@@ -735,6 +735,19 @@ const CSVImport = (() => {
         Storage.saveData(snapshot);
     }
 
+    // Merge-based save for roster/staffing edits. Only sends the sections
+    // that a manual edit touches, so it won't overwrite another user's
+    // performance data or pile counts saved around the same time.
+    function saveRosterOnly() {
+        Storage.mergeData({
+            roster: DATA.roster,
+            damagelandRoster: DATA.damagelandRoster,
+            targetHC: DATA.targetHC,
+            damagelandTargetHC: DATA.damagelandTargetHC,
+            timestamp: new Date().toISOString(),
+        });
+    }
+
     async function loadFromStorage() {
         const snapshot = await Storage.loadData();
         if (!snapshot) return false;
@@ -914,7 +927,7 @@ const CSVImport = (() => {
                     DATA.performance[login] = { uph: 0, tot: 0, unitsShift: 0, unitsWeek: 0, dwellAvg: 0, firstTouch: 0 };
                 }
 
-                saveToStorage();
+                saveRosterOnly();
                 statusEl.textContent = `Added ${firstName} ${lastName} (${login}) to ${FLOOR_REVERSE[floor]}`;
                 statusEl.className = "import-status success";
 
@@ -972,7 +985,7 @@ const CSVImport = (() => {
                     DATA.performance[login] = { uph: 0, tot: 0, unitsShift: 0, unitsWeek: 0, dwellAvg: 0, firstTouch: 0 };
                 }
 
-                saveToStorage();
+                saveRosterOnly();
                 statusEl.textContent = `Added ${firstName} ${lastName} (${login}) to Damageland`;
                 statusEl.className = "import-status success";
 
@@ -992,5 +1005,6 @@ const CSVImport = (() => {
         loadFromStorage,
         clearStorage,
         saveToStorage,
+        saveRosterOnly,
     };
 })();
