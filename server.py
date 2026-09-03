@@ -17,6 +17,8 @@ PORT = int(os.environ.get("PORT", 8080))
 DATA_DIR = Path(__file__).parent / "server_data"
 DATA_FILE = DATA_DIR / "dashboard_data.json"
 HISTORY_FILE = DATA_DIR / "history_data.json"
+SW_DATA_FILE = DATA_DIR / "standard_work.json"
+SW_HISTORY_FILE = DATA_DIR / "standard_work_history.json"
 
 # Ensure data directory exists
 DATA_DIR.mkdir(exist_ok=True)
@@ -52,6 +54,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 "dataExists": DATA_FILE.exists(),
                 "historyExists": HISTORY_FILE.exists(),
             })
+        elif self.path == "/api/standard-work/data":
+            self._send_json(read_json(SW_DATA_FILE) or {})
+        elif self.path == "/api/standard-work/history":
+            self._send_json(read_json(SW_HISTORY_FILE) or [])
         else:
             super().do_GET()
 
@@ -143,6 +149,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             existing.sort(key=lambda s: s["date"])
             write_json(HISTORY_FILE, existing)
             self._send_json({"ok": True, "added": added, "total": len(existing)})
+
+        elif self.path == "/api/standard-work/data":
+            write_json(SW_DATA_FILE, payload)
+            self._send_json({"ok": True, "message": "Standard work data saved"})
+
+        elif self.path == "/api/standard-work/history":
+            write_json(SW_HISTORY_FILE, payload)
+            self._send_json({"ok": True, "message": "Standard work history saved"})
 
         else:
             self._send_error(404, "Not found")

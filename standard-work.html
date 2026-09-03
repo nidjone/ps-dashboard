@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORF3 - AM Standard Work Dashboard</title>
+    <link rel="stylesheet" href="standard-work.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header class="sw-header">
+        <div class="sw-header-left">
+            <h1>ORF3 &mdash; AM Standard Work<span class="sw-header-subtitle">Inbound Stow &mdash; Shift Checklist</span></h1>
+        </div>
+        <div class="sw-header-right">
+            <a href="index.html" class="sw-nav-link">PS Dashboard</a>
+            <div class="sw-mode-indicator synced" id="sync-indicator">
+                <span class="pulse-dot"></span>
+                <span id="sync-status">Synced</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sync pending warning (toggled by updateSyncIndicator() in standard-work.js) -->
+    <div class="sw-sync-warning" id="sync-warning">Sync pending &mdash; changes will retry automatically</div>
+
+    <!-- Navigation Tabs -->
+    <nav class="sw-tab-nav">
+        <button class="sw-tab-btn active" data-tab="daily-view">Daily</button>
+        <button class="sw-tab-btn" data-tab="weekly-monthly-view">Weekly / Monthly</button>
+        <button class="sw-tab-btn" data-tab="resources-view">Resources</button>
+        <button class="sw-tab-btn" data-tab="history-view">History</button>
+    </nav>
+
+    <!-- Tab Content -->
+    <main class="sw-main">
+        <!-- Daily View Tab (Default) -->
+        <section class="sw-tab-panel active" id="daily-view">
+            <!-- Weekly Objectives -->
+            <div class="sw-weekly-objectives" id="weekly-objectives-section">
+                <h3>Weekly Objectives</h3>
+                <textarea id="weekly-objectives-text" placeholder="Enter your weekly focus areas..."></textarea>
+            </div>
+
+            <!-- Daily Task Sections by Category -->
+            <div class="task-sections" id="daily-task-sections">
+                <div class="sw-section" id="section-staffing" data-category="staffing">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Staffing &amp; Labor</span>
+                        <span class="sw-section-count" id="count-staffing">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="staffing" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-staffing"></div>
+                </div>
+
+                <div class="sw-section" id="section-quality" data-category="quality">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Audits &amp; Quality</span>
+                        <span class="sw-section-count" id="count-quality">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="quality" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-quality"></div>
+                </div>
+
+                <div class="sw-section" id="section-coaching" data-category="coaching">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Coaching &amp; Development</span>
+                        <span class="sw-section-count" id="count-coaching">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="coaching" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-coaching"></div>
+                </div>
+
+                <div class="sw-section" id="section-metrics" data-category="metrics">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Standard Work &amp; Metrics</span>
+                        <span class="sw-section-count" id="count-metrics">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="metrics" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-metrics"></div>
+                </div>
+
+                <div class="sw-section" id="section-safety" data-category="safety">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Safety &amp; Compliance</span>
+                        <span class="sw-section-count" id="count-safety">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="safety" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-safety"></div>
+                </div>
+
+                <div class="sw-section" id="section-operations" data-category="operations">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Floor Presence &amp; Operations</span>
+                        <span class="sw-section-count" id="count-operations">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="operations" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-operations"></div>
+                </div>
+
+                <div class="sw-section" id="section-handoff" data-category="handoff">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Shift Handoff</span>
+                        <span class="sw-section-count" id="count-handoff">0</span>
+                        <button class="sw-section-add-btn" data-frequency="daily" data-category="handoff" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-handoff"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Weekly / Monthly View Tab -->
+        <section class="sw-tab-panel" id="weekly-monthly-view">
+            <div class="task-sections" id="weekly-monthly-sections">
+                <div class="sw-section" id="section-weekly" data-frequency="weekly">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Weekly Deliverables</span>
+                        <span class="sw-section-count" id="count-weekly">0</span>
+                        <button class="sw-section-add-btn" data-frequency="weekly" data-category="coaching" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-weekly"></div>
+                </div>
+
+                <div class="sw-section" id="section-monthly" data-frequency="monthly">
+                    <div class="sw-section-header">
+                        <span class="sw-section-title">Monthly Deliverables</span>
+                        <span class="sw-section-count" id="count-monthly">0</span>
+                        <button class="sw-section-add-btn" data-frequency="monthly" data-category="coaching" title="Add task">+</button>
+                    </div>
+                    <div class="sw-task-list" id="tasks-monthly"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resources View Tab -->
+        <section class="sw-tab-panel" id="resources-view">
+            <div class="sw-resources-layout" id="resources-groups">
+                <!-- Resource groups rendered here -->
+            </div>
+        </section>
+
+        <!-- History View Tab -->
+        <section class="sw-tab-panel" id="history-view">
+            <div class="sw-history-layout">
+                <div class="sw-history-header">
+                    <span class="sw-section-title">Shift History</span>
+                    <div class="sw-history-actions">
+                        <button id="btn-export-sw-history" class="sw-btn sw-btn-primary">Export History (JSON)</button>
+                        <input type="file" id="import-sw-history-file" accept=".json" style="display:none">
+                        <button id="btn-import-sw-history" class="sw-btn sw-btn-secondary">Import History (JSON)</button>
+                        <span class="sw-import-status" id="status-sw-history"></span>
+                    </div>
+                </div>
+                <div class="sw-history-list" id="history-list">
+                    <!-- History snapshots rendered here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add/Edit Task Modal -->
+    <div class="sw-modal-overlay" id="task-modal-overlay">
+        <div class="sw-modal" id="task-modal">
+            <div class="sw-modal-header">
+                <h2 id="modal-title">Add Task</h2>
+                <button class="sw-modal-close" id="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="sw-modal-body">
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="modal-task-title">Title</label>
+                    <input type="text" class="sw-form-input" id="modal-task-title" placeholder="Task description">
+                    <span class="sw-form-error" id="modal-title-error"></span>
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="modal-task-category">Category</label>
+                    <select class="sw-form-select" id="modal-task-category">
+                        <option value="staffing">Staffing &amp; Labor</option>
+                        <option value="quality">Audits &amp; Quality</option>
+                        <option value="coaching">Coaching &amp; Development</option>
+                        <option value="metrics">Standard Work &amp; Metrics</option>
+                        <option value="safety">Safety &amp; Compliance</option>
+                        <option value="operations">Floor Presence &amp; Operations</option>
+                        <option value="handoff">Shift Handoff</option>
+                    </select>
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="modal-task-frequency">Frequency</label>
+                    <select class="sw-form-select" id="modal-task-frequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="modal-task-notes">Notes (optional)</label>
+                    <input type="text" class="sw-form-input" id="modal-task-notes" placeholder="Additional context">
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="modal-task-links">Links (optional)</label>
+                    <textarea class="sw-form-input" id="modal-task-links" rows="3" placeholder="One per line: Label | https://url"></textarea>
+                    <span class="sw-form-hint">One link per line, formatted as <code>Label | https://url</code></span>
+                </div>
+                <div class="sw-form-group sw-form-group-inline">
+                    <label class="sw-form-label" for="modal-task-editable">
+                        <input type="checkbox" id="modal-task-editable">
+                        Editable field (dynamic value)
+                    </label>
+                </div>
+                <div class="sw-form-group" id="modal-editable-field-group" style="display:none;">
+                    <label class="sw-form-label" for="modal-task-editable-field">Editable Field Value</label>
+                    <input type="text" class="sw-form-input" id="modal-task-editable-field" placeholder="e.g., 3 bin audits + 2 ASIN audits">
+                </div>
+            </div>
+            <div class="sw-modal-footer">
+                <button class="sw-btn sw-btn-secondary" id="modal-cancel">Cancel</button>
+                <button class="sw-btn sw-btn-primary" id="modal-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Resource Modal -->
+    <div class="sw-modal-overlay" id="resource-modal-overlay">
+        <div class="sw-modal" id="resource-modal">
+            <div class="sw-modal-header">
+                <h2 id="resource-modal-title">Add Resource</h2>
+                <button class="sw-modal-close" id="resource-modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="sw-modal-body">
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="resource-label">Label</label>
+                    <input type="text" class="sw-form-input" id="resource-label" placeholder="e.g., Vantage — Fulfillment Dashboards">
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="resource-url">URL</label>
+                    <input type="text" class="sw-form-input" id="resource-url" placeholder="https://...">
+                </div>
+                <div class="sw-form-group">
+                    <label class="sw-form-label" for="resource-group">Group</label>
+                    <select class="sw-form-select" id="resource-group">
+                        <option value="Staffing &amp; Labor">Staffing &amp; Labor</option>
+                        <option value="Metrics &amp; Reports">Metrics &amp; Reports</option>
+                        <option value="Standard Work">Standard Work</option>
+                        <option value="Coaching &amp; People">Coaching &amp; People</option>
+                        <option value="Safety">Safety</option>
+                        <option value="IT &amp; Admin">IT &amp; Admin</option>
+                    </select>
+                </div>
+                <span class="sw-form-error" id="resource-error"></span>
+            </div>
+            <div class="sw-modal-footer">
+                <button class="sw-btn sw-btn-secondary" id="resource-cancel">Cancel</button>
+                <button class="sw-btn sw-btn-primary" id="resource-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <span>ORF3 &mdash; AM Standard Work Dashboard v1.0</span>
+        <span>Shift checklist resets daily | Data persists across sessions</span>
+    </footer>
+
+    <script src="storage.js"></script>
+    <script src="standard-work-data.js"></script>
+    <script src="standard-work-history.js"></script>
+    <script src="standard-work.js"></script>
+    <script src="standard-work-renderer.js"></script>
+</body>
+</html>

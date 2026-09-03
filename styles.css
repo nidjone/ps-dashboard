@@ -68,6 +68,22 @@ body {
     gap: 20px;
 }
 
+.header-nav-link {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.header-nav-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
 .header-controls {
     display: flex;
     align-items: center;
