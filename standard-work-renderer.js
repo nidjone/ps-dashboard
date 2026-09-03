@@ -1187,6 +1187,103 @@ const StandardWorkRenderer = (() => {
     }
 
     /**
+     * Produces a full-backup JSON string (state + history) via
+     * StandardWorkState.exportFullBackup() and, when running in a browser-like
+     * environment, triggers a client-side file download via a temporary
+     * `<a download>` element. In non-DOM environments (e.g. Node test runner)
+     * the download step is skipped and the JSON string is simply returned.
+     * Mirrors StandardWorkHistory.downloadExport()'s node-guard pattern.
+     *
+     * @param {string} [filename] - Desired download filename. Defaults to
+     *   `standard-work-backup-<today's ISO date>.json`.
+     * @returns {string} The exported JSON string.
+     */
+    function downloadFullBackup(filename) {
+        if (typeof StandardWorkState === "undefined" || typeof StandardWorkState.exportFullBackup !== "function") {
+            return "";
+        }
+        const json = StandardWorkState.exportFullBackup();
+
+        if (typeof document === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+            // No DOM available (e.g. Node test environment) — nothing to
+            // trigger a download with, just return the JSON string.
+            return json;
+        }
+
+        const name = filename || `standard-work-backup-${new Date().toISOString().slice(0, 10)}.json`;
+
+        try {
+            const blob = new Blob([json], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.warn("[StandardWorkRenderer] downloadFullBackup failed to trigger download:", e.message);
+        }
+
+        return json;
+    }
+
+    /**
+     * Reads a selected full-backup file and delegates to
+     * StandardWorkState.importFullBackup(). On success, refreshes the entire
+     * UI (renderAll with the freshly-imported state, plus the history view) and
+     * surfaces a status message (any warning takes precedence). Mirrors
+     * handleHistoryImportFile()'s FileReader + node-fallback structure.
+     *
+     * @param {File} file
+     */
+    function handleFullBackupImportFile(file) {
+        if (!file) return;
+        if (typeof StandardWorkState === "undefined" || typeof StandardWorkState.importFullBackup !== "function") {
+            return;
+        }
+
+        function applyImport(text) {
+            const result = StandardWorkState.importFullBackup(text);
+            if (result && result.success) {
+                const state =
+                    typeof StandardWorkState.getState === "function" ? StandardWorkState.getState() : null;
+                if (state && typeof renderAll === "function") {
+                    renderAll(state);
+                }
+                renderHistoryView();
+                setHistoryStatus(result.warning || "Backup imported successfully.", false);
+            } else {
+                setHistoryStatus(`Import failed: ${(result && result.error) || "Invalid backup file"}`, true);
+            }
+        }
+
+        if (typeof FileReader === "undefined") {
+            // No FileReader (e.g. Node test environment). Fall back to reading
+            // a `.text()`-capable file or its `_text` stub, so tests can drive
+            // the import path without a real browser.
+            if (typeof file.text === "function") {
+                file.text().then(applyImport).catch(() => {
+                    setHistoryStatus("Import failed: could not read file", true);
+                });
+            } else if (typeof file._text === "string") {
+                applyImport(file._text);
+            }
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            applyImport(String(reader.result));
+        };
+        reader.onerror = () => {
+            setHistoryStatus("Import failed: could not read file", true);
+        };
+        reader.readAsText(file);
+    }
+
+    /**
      * Wires up the History tab's export/import controls (Req 8.4, 8.5):
      * - Export button triggers StandardWorkHistory.downloadExport() (JSON download)
      * - Import button opens the hidden file input; the file input's `change`
@@ -1222,6 +1319,40 @@ const StandardWorkRenderer = (() => {
                 const files = target.files;
                 const file = files && files.length ? files[0] : null;
                 if (file) handleHistoryImportFile(file);
+                // Reset so selecting the same file again re-triggers `change`.
+                try {
+                    target.value = "";
+                } catch (err) {
+                    /* some inputs disallow programmatic value reset; ignore */
+                }
+            });
+        }
+
+        // --- Full Backup (state + history) export/import ---
+        const exportBackupBtn = document.getElementById("btn-export-sw-backup");
+        if (exportBackupBtn && !exportBackupBtn.dataset.swBound) {
+            exportBackupBtn.dataset.swBound = "true";
+            exportBackupBtn.addEventListener("click", () => {
+                downloadFullBackup();
+                setHistoryStatus("Backup exported.", false);
+            });
+        }
+
+        const importBackupBtn = document.getElementById("btn-import-sw-backup");
+        const backupFileInput = document.getElementById("import-sw-backup-file");
+        if (importBackupBtn && backupFileInput && !importBackupBtn.dataset.swBound) {
+            importBackupBtn.dataset.swBound = "true";
+            importBackupBtn.addEventListener("click", () => {
+                if (typeof backupFileInput.click === "function") backupFileInput.click();
+            });
+        }
+        if (backupFileInput && !backupFileInput.dataset.swBound) {
+            backupFileInput.dataset.swBound = "true";
+            backupFileInput.addEventListener("change", (e) => {
+                const target = (e && e.target) || backupFileInput;
+                const files = target.files;
+                const file = files && files.length ? files[0] : null;
+                if (file) handleFullBackupImportFile(file);
                 // Reset so selecting the same file again re-triggers `change`.
                 try {
                     target.value = "";
@@ -1670,6 +1801,8 @@ const StandardWorkRenderer = (() => {
         initWeeklyObjectives,
         renderHistoryView,
         initHistoryControls,
+        downloadFullBackup,
+        handleFullBackupImportFile,
         renderResourcesView,
         initResourcesControls,
         showResourceModal,

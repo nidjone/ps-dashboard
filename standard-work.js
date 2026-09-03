@@ -1711,6 +1711,119 @@ const StandardWorkState = (() => {
         autoRefreshTimer = null;
     }
 
+    // --- Full Backup Export / Import ---
+    /**
+     * Exports the ENTIRE dashboard (state + history) as a single JSON string
+     * suitable for downloading and re-importing on another instance (e.g. a
+     * fresh Render deploy). The bundle carries both the current dashboard
+     * state and the full history snapshot array.
+     *
+     * State is read from `currentState`; if that is null (e.g. before init),
+     * it falls back to parsing localStorage "sw_state". History is read
+     * directly from localStorage "sw_history" (JSON.parse), defaulting to an
+     * empty array on any failure.
+     *
+     * @returns {string} A pretty-printed JSON string of the backup bundle:
+     *   { type: "sw-full-backup", version, exportedAt, state, history }
+     */
+    function exportFullBackup() {
+        let state = currentState;
+        if (!state && typeof localStorage !== "undefined") {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                state = raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                state = null;
+            }
+        }
+
+        let history = [];
+        if (typeof localStorage !== "undefined") {
+            try {
+                const rawHistory = localStorage.getItem("sw_history");
+                const parsed = rawHistory ? JSON.parse(rawHistory) : [];
+                history = Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                history = [];
+            }
+        }
+
+        const bundle = {
+            type: "sw-full-backup",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            state: state || null,
+            history,
+        };
+
+        return JSON.stringify(bundle, null, 2);
+    }
+
+    /**
+     * Imports a full-backup bundle produced by exportFullBackup(). Replaces the
+     * current dashboard state and (best-effort) the history snapshots.
+     *
+     * Validation:
+     * - Invalid JSON -> { success: false, error: "Invalid JSON" }.
+     * - Not an object or wrong/absent `type` -> error "Not a Standard Work backup file".
+     * - `state` failing isValidState() -> error "Backup is missing valid dashboard state".
+     *
+     * On success the state is set as `currentState` and persisted via
+     * saveState() (localStorage + best-effort server POST). History, when a
+     * valid array, is handed to StandardWorkHistory.importJSON() which
+     * validates + persists + server-syncs it. A history failure does not fail
+     * the whole import — success is still returned with a `warning`.
+     *
+     * @param {string} jsonString - The backup JSON produced by exportFullBackup()
+     * @returns {{success: boolean, error?: string, warning?: string}}
+     */
+    function importFullBackup(jsonString) {
+        let bundle;
+        try {
+            bundle = JSON.parse(jsonString);
+        } catch (e) {
+            return { success: false, error: "Invalid JSON" };
+        }
+
+        if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
+            return { success: false, error: "Not a Standard Work backup file" };
+        }
+        if (bundle.type !== "sw-full-backup") {
+            return { success: false, error: "Not a Standard Work backup file" };
+        }
+
+        if (!isValidState(bundle.state)) {
+            return { success: false, error: "Backup is missing valid dashboard state" };
+        }
+
+        // Apply state: set the module-level currentState and persist it (writes
+        // localStorage + best-effort server sync).
+        currentState = bundle.state;
+        saveState(currentState);
+
+        let warning;
+        if (
+            typeof StandardWorkHistory !== "undefined" &&
+            StandardWorkHistory &&
+            typeof StandardWorkHistory.importJSON === "function"
+        ) {
+            if (Array.isArray(bundle.history)) {
+                try {
+                    const result = StandardWorkHistory.importJSON(JSON.stringify(bundle.history));
+                    if (!result || !result.success) {
+                        warning = "Dashboard imported; history could not be imported";
+                    }
+                } catch (e) {
+                    warning = "Dashboard imported; history could not be imported";
+                }
+            } else {
+                warning = "Dashboard imported; history could not be imported";
+            }
+        }
+
+        return warning ? { success: true, warning } : { success: true };
+    }
+
     // --- Getters ---
     /**
      * Returns the current state object.
@@ -1753,6 +1866,8 @@ const StandardWorkState = (() => {
         getWeeklyObjectives,
         setWeeklyObjectives,
         saveState,
+        exportFullBackup,
+        importFullBackup,
         syncToServer,
         retryServerSync,
         isSyncPending,
